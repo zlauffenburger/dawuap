@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 
-class hydro(object):
+class routing(object):
     """A rainfall-runoff model for water management and decision support system
 
     """
