@@ -22,6 +22,7 @@ class TestInitialization(object):
     def teardown_class(klass):
         print "TEAR DOWN!"
 
+
     def setup(self):
         pass
     def teardown(self):
@@ -54,8 +55,8 @@ class TestRouting(object):
         K[2] = 0.6
         e = np.ones_like(K)*0.42
         Qk = np.ones_like(K)*0.2
-        a.muskingum_routing(Qk,K,e)
-        Qk1 = a.muskingum_routing(Qk,K,e)
+        #a.muskingum_routing(Qk,K,e, 0)
+        Qk1 = a.muskingum_routing(Qk, K, e, 0)
         print Qk1
 
 
