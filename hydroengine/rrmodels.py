@@ -14,35 +14,40 @@ class hbv(object):
         self.ddf = params['ddf']
         self.swe = swe_o
         self.pond = pond_o
+        self.melt = np.zeros_like(self.swe)
+
 
     def snowpack(self, incid_precip, t_max, t_min):
 
-        rain = 0
-        if (t_max <= self.t_thres):
-            swe = incid_precip
-            rain = 0
-        elif (t_min > self.t_thres):
-            rain = incid_precip
-            swe = 0
-        else:
-            swe = incid_precip * np.array(self.t_thres - t_min / (t_max - t_min)).clip(min=0)
+        swe = np.zeros_like(self.swe)
+        rain = np.zeros_like(self.swe)
+
+        ind_allswe = np.less_equal(t_max, self.t_thres)
+        ind_allrain = np.greater(t_min, self.t_thres)
+        ind_mixed = np.logical_not(np.logical_or(ind_allswe, ind_allrain))
+
+        swe[ind_allswe] = incid_precip[ind_allswe]
+        rain[ind_allrain] = incid_precip[ind_allrain]
+        swe[ind_mixed] = (incid_precip * (np.array((self.t_thres - t_min) / (t_max - t_min)).clip(min=0)))[ind_mixed]
+        rain[ind_mixed] = (incid_precip - swe)[ind_mixed]
 
         self.swe += swe
 
+        # Begin snowmelt routine
+
         tp = 0.5 * (t_max + t_min)
 
-        self.melt[np.greater(tp, self.t_thres)]
+        ind_melt = np.greater(tp, self.t_thres)
+        ind_swe = np.greater(self.swe, 0)
 
-        if (tp > self.t_thres):
-            if (self.swe > 0):
-                self.melt = self.ddf * (tp - self.t_thres)
-                self.swe -= self.melt
-                if (self.melt > self.swe):
-                    self.melt = self.swe
-                    self.swe = 0
+        # if average temp is above threshold and there is swe on the ground, produce melt
+        ind = np.logical_and(ind_melt, ind_swe)
+        self.melt[ind] = (self.ddf * (tp - self.t_thres))[ind]
 
-        else:
-            self.melt = 0;
+        # if the amount of potential melt is larger than available swe, cap melt to available swe
+        self.melt[np.greater(self.melt, self.swe)] = self.swe[np.greater(self.melt, self.swe)]
+
+        self.swe -= self.melt
 
         self.pond += self.melt + rain
 
