@@ -12,12 +12,21 @@ class Test_hbv(TestCase):
     def setup_class(klass):
         print "setting up class " + klass.__name__
         Test_hbv.args = {
+            'image_res': 30,
+            'catch_area': 50000,
+            'catch_area': 50000,
             'pp_temp_thres': 2,
             'p_base': 10,
-            'ddf': 0.02
+            'ddf': 0.02,
+            'soil_max_wat': 50.0,
+            'soil_beta': 0.5,
+            'aet_lp_param': 0.5,
         }
         Test_hbv.swe_o = np.zeros((20, 30))
         Test_hbv.pond_o = np.zeros_like(Test_hbv.swe_o)
+        Test_hbv.sm_o = np.zeros_like(Test_hbv.swe_o)
+        Test_hbv.stw1_o = np.zeros_like(Test_hbv.swe_o)
+        Test_hbv.stw2_o = np.zeros_like(Test_hbv.swe_o)
 
 
     @classmethod
@@ -26,7 +35,7 @@ class Test_hbv(TestCase):
 
     def setUp(self):
         print "setting up " + self.__class__.__name__
-        self.ohbv = hydroengine.hbv(Test_hbv.swe_o, Test_hbv.pond_o, **Test_hbv.args)
+        self.ohbv = hydroengine.hbv(Test_hbv.swe_o, Test_hbv.pond_o, Test_hbv.sm_o, Test_hbv.stw1_o, Test_hbv.stw2_o, **Test_hbv.args)
 
     def tearDown(self):
         Test_hbv.swe_o = np.zeros((20, 30))
@@ -79,6 +88,23 @@ class Test_hbv(TestCase):
         np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(Test_hbv.swe_o) * 0.03, 'all rain', verbose=True)
 
     # Tests for soil_processes module
-    def test_soil_processes(self):
+    def test_soil_processes_allrunsoff(self):
+        self.ohbv.sm = np.zeros_like(Test_hbv.swe_o)+50.0
+        precip = np.ones_like(Test_hbv.swe_o) * 0.03
+        pet = np.ones_like(Test_hbv.swe_o) * 0.0
+        self.ohbv.pond = precip
+        self.ohbv.soil_processes(pet)
+        np.testing.assert_array_equal(self.ohbv.runoff, precip, 'all rain', verbose=True)
+
+    def test_soil_processes_allinfiltrates(self):
+        self.ohbv.sm = np.zeros_like(Test_hbv.swe_o) + 0.0
+        precip = np.ones_like(Test_hbv.swe_o) * 0.03
+        pet = np.ones_like(Test_hbv.swe_o) * 0.0
+        self.ohbv.pond = precip
+        self.ohbv.soil_processes(pet)
+        np.testing.assert_array_equal(self.ohbv.runoff, np.zeros_like(Test_hbv.swe_o), 'all rain runs off', verbose=True)
+        np.testing.assert_array_equal(self.ohbv.sm, precip, 'all rain infiltrates', verbose=True)
+
+    def test_discharge(self):
         TestCase.fail()
 

@@ -1,20 +1,44 @@
 from __future__ import division
 import numpy as np
+import rasterstats as rst
 
 
 class hbv(object):
-    """Implementation of the HVB rainfall-runoff model
+    """Implementation of the classic HVB rainfall-runoff model
 
     """
 
-    def __init__(self, swe_o, pond_o, **params):
+    def __init__(self, swe_o, pond_o, sm_o, stw1_o, stw2_o, **params):
 
+        # Geomtry information
+        self.pixel_area = params['image_res']*params['image_res']
+        self.catchment_area = params['catch_area']
+        self.t_step = params['time_step']
+
+        # snow paramters
         self.t_thres = params['pp_temp_thres']
         self.p_base = params['p_base']
         self.ddf = params['ddf']
+
+        # soil paramters
+        self.fcap = params['soil_max_wat']
+        self.beta = params['soil_beta']
+        self.lp = params['aet_lp_param']
+
+
+        # snow state and flux variables
         self.swe = swe_o
         self.pond = pond_o
         self.melt = np.zeros_like(self.swe)
+
+        # soil state and flux variables
+        self.sm = sm_o
+        self.delta_sm = np.zeros_like(self.swe)
+        self.runoff = np.zeros_like(self.swe)
+        self.stw1 = stw1_o
+        self.stw2 = stw2_o
+
+        self.aet = np.zeros_like(self.swe);
 
 
     def snowpack(self, incid_precip, t_max, t_min):
@@ -51,8 +75,44 @@ class hbv(object):
 
         self.pond += self.melt + rain
 
-    def soil_processes(self):
-        pass
+    def soil_processes(self, pot_et):
+
+        # calculate AET
+        self.aet = (pot_et * self.sm/(self.fcap*self.lp)).clip(min=0.0, max=1.0)
+
+        # For cell where soil moisture is already at capacity, runoff is all the ponded water plus excess water in soil
+        ind_sm_geq_fcap = np.greater_equal(self.sm, self.fcap)
+        self.runoff[ind_sm_geq_fcap] = self.pond[ind_sm_geq_fcap] + (self.sm - self.fcap)[ind_sm_geq_fcap]
+        self.sm[ind_sm_geq_fcap] = self.fcap
+
+        # in all other cells calculate the portion of ponded water that goes into the soil storage
+        ind_sm_lt_fcap = np.logical_not(ind_sm_geq_fcap)
+        self.delta_sm[ind_sm_lt_fcap] = (self.pond * (1 - np.power((self.sm/self.fcap), self.beta)))[ind_sm_lt_fcap]
+        self.sm[ind_sm_lt_fcap] += self.delta_sm[ind_sm_lt_fcap]
+        self.runoff[ind_sm_lt_fcap] = (self.pond - self.delta_sm)[[ind_sm_lt_fcap]]
+
+        # Check if cell exceed storage capacity after adding delta_sm
+        ind_sm_geq_fcap = np.greater_equal(self.sm, self.fcap)
+        self.runoff[ind_sm_geq_fcap] += (self.sm - self.fcap)[ind_sm_geq_fcap]
+        self.sm[ind_sm_geq_fcap] = self.fcap
+
+        # if there is sufficient soil moisture to satisfy aet, reduce sm
+        ind_sm_gt_aet = np.greater(self.sm, self.aet)
+        self.sm[ind_sm_gt_aet] -= self.aet[ind_sm_gt_aet]
+        # otherwise take all water storage and limit aet
+        ind_sm_leq_aet = np.logical_not(ind_sm_gt_aet)
+        self.aet[ind_sm_leq_aet] = self.sm[ind_sm_leq_aet]
+        self.sm[ind_sm_leq_aet] = 0.0
+
+    def discharge(self):
+
+        # Add runoff to intermediate tank
+        self.stw1 = np.sum(self.runoff * self.pixel_area)/self.catchment_area
+
+
+
+
+
 
     def excess_precip_to_runoff(self):
         def u(i):
