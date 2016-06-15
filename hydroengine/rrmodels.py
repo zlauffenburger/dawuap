@@ -51,6 +51,9 @@ class hbv(object):
 
         self.pond += self.melt + rain
 
+    def soil_processes(self):
+        pass
+
     def excess_precip_to_runoff(self):
         def u(i):
             return np.array(

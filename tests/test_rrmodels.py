@@ -31,7 +31,6 @@ class Test_hbv(TestCase):
     def tearDown(self):
         Test_hbv.swe_o = np.zeros((20, 30))
         Test_hbv.pond_o = np.zeros_like(Test_hbv.swe_o)
-        pass
 
     #@with_setup(setup, teardown)
     def TestInitialization(self):
@@ -78,4 +77,8 @@ class Test_hbv(TestCase):
         self.ohbv.snowpack(precip, t_max, t_min)
         np.testing.assert_array_equal(self.ohbv.swe, np.ones_like(Test_hbv.swe_o) * 0.0, 'zero swe', verbose=True)
         np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(Test_hbv.swe_o) * 0.03, 'all rain', verbose=True)
+
+    # Tests for soil_processes module
+    def test_soil_processes(self):
+        TestCase.fail()
 
