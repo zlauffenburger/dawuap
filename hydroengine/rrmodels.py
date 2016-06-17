@@ -1,6 +1,7 @@
 from __future__ import division
 import numpy as np
 import rasterstats as rst
+import rasterio as rio
 
 
 class hbv(object):
@@ -11,9 +12,9 @@ class hbv(object):
     def __init__(self, swe_o, pond_o, sm_o, stw1_o, stw2_o, **params):
 
         # Geomtry information
-        self.pixel_area = params['image_res']*params['image_res']
-        self.catchment_area = params['catch_area']
-        self.t_step = params['time_step']
+        #self.pixel_area = params['image_res']*params['image_res']
+        #self.catchment_area = params['catch_area']
+        #self.t_step = params['time_step']
 
         # snow paramters
         self.t_thres = params['pp_temp_thres']
@@ -104,7 +105,14 @@ class hbv(object):
         self.aet[ind_sm_leq_aet] = self.sm[ind_sm_leq_aet]
         self.sm[ind_sm_leq_aet] = 0.0
 
-    def discharge(self):
+    def discharge(self, shp_poly, affine=None):
+
+        # this is for testing purposes
+        affine = rio.Affine
+        src = rio.open('./tests/test_data/DEM_64m_1992.tif')
+        img = src.read()
+
+
 
         # Add runoff to intermediate tank
         self.stw1 = np.sum(self.runoff * self.pixel_area)/self.catchment_area
