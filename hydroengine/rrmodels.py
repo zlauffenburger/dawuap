@@ -105,17 +105,11 @@ class hbv(object):
         self.aet[ind_sm_leq_aet] = self.sm[ind_sm_leq_aet]
         self.sm[ind_sm_leq_aet] = 0.0
 
-    def discharge(self, shp_poly, affine=None):
+    def discharge(self, shp_wtshds, affine=None):
 
-        # this is for testing purposes
-        affine = rio.Affine
-        src = rio.open('./tests/test_data/DEM_64m_1992.tif')
-        img = src.read()
-
-
-
-        # Add runoff to intermediate tank
-        self.stw1 = np.sum(self.runoff * self.pixel_area)/self.catchment_area
+        # builds a geojson object with required statistics for each catchment
+        self.stw1 = rst.zonal_stats(shp_wtshds, self.runoff, nodata=-32768, affine=affine, geojson_out=True,
+                                    prefix='runoff_', stats=['mean'])
 
 
 
