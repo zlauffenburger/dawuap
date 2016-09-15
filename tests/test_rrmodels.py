@@ -18,7 +18,6 @@ class Test_hbv(TestCase):
         Test_hbv.args = {
             'image_res': 30,
             'catch_area': 50000,
-            'catch_area': 50000,
             'pp_temp_thres': 2,
             'p_base': 10,
             'ddf': 0.02,
@@ -116,7 +115,7 @@ class Test_hbv(TestCase):
         runoff = precip.read()
         self.ohbv.runoff = runoff[0, :, :]
         assert(isinstance(self.ohbv.runoff, np.ndarray))
-        self.ohbv.discharge('./tests/test_data/WBDHU8_MT.shp', affine)
+        self.ohbv.precipitation_excess('./tests/test_data/WBDHU8_MT.shp', affine)
         #ro_map = json.dumps(self.ohbv.stw1)
         geom = self.ohbv.stw1[0]['geometry']
 

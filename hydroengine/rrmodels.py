@@ -1,8 +1,20 @@
 from __future__ import division
+from abc import ABCMeta, abstractmethod
 import numpy as np
 import rasterstats as rst
 import rasterio as rio
 
+
+class rrmodel(metaclass=ABCMeta):
+    """
+    This is a base class that defines the basic interface of rainfall runoff models
+    """
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def runoff(self):
+        pass
 
 class hbv(object):
     """Implementation of the classic HVB rainfall-runoff model
@@ -105,7 +117,7 @@ class hbv(object):
         self.aet[ind_sm_leq_aet] = self.sm[ind_sm_leq_aet]
         self.sm[ind_sm_leq_aet] = 0.0
 
-    def discharge(self, shp_wtshds, affine=None):
+    def precipitation_excess(self, shp_wtshds, affine=None):
 
         # builds a geojson object with required statistics for each catchment
         self.stw1 = rst.zonal_stats(shp_wtshds, self.runoff, nodata=-32768, affine=affine, geojson_out=True,
@@ -116,7 +128,7 @@ class hbv(object):
 
 
 
-    def excess_precip_to_runoff(self):
+    def runoff(self):
         def u(i):
             return np.array(
                 - ((self.p_base - 2 * i + 2) * np.abs(self.p_base - 2 * i + 2) + (2 * i - self.p_base) * np.abs(
