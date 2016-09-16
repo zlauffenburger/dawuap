@@ -26,6 +26,14 @@ class hbv(object):
         self.beta = params['soil_beta']
         self.lp = params['aet_lp_param']
 
+        # self.hl1 = params['storage_parameter_1']
+        # self.hl2 = params['storage_parameter_2']
+        #
+        # self.ck0 = params['surface_conductance']
+        # self.ck1 = params['mid_layer_conductance']
+        # self.ck2 = params['lower_layer_conductance']
+
+        self.soils = {}
 
         # snow state and flux variables
         self.swe = swe_o
@@ -105,15 +113,45 @@ class hbv(object):
         self.aet[ind_sm_leq_aet] = self.sm[ind_sm_leq_aet]
         self.sm[ind_sm_leq_aet] = 0.0
 
-    def discharge(self, shp_wtshds, affine=None):
+    def discharge(self, shp_wtshds, affine=None, stats=['mean']):
+
 
         # builds a geojson object with required statistics for each catchment
         self.stw1 = rst.zonal_stats(shp_wtshds, self.runoff, nodata=-32768, affine=affine, geojson_out=True,
-                                    prefix='runoff_', stats=['mean'])
+                                    prefix='runoff_', stats=stats)
 
+        soil_layers = {}
 
+        for i in range(len(self.stw1)):
+            props = self.stw1[i]['properties']
+            if props['runoff_mean'] > props['hbv_hl1']:
+                soil_layers['Q0'] = (props['runoff_mean'] - props['hbv_hl1']) * props['hbv_ck0']
+                props['runoff_mean'] -= soil_layers['Q0']
+            else:
+                soil_layers['Q0'] = 0.0
 
+            if props['runoff_mean'] > 0.0:
+                soil_layers['Q1'] = props['runoff_mean'] * props['hbv_ck1']
+                props['runoff_mean'] -= soil_layers['Q1']
+            else:
+                soil_layers['Q1'] = 0.0
 
+            if props['runoff_mean'] > props['hbv_perc']:
+                props['runoff_mean'] -= props['hbv_perc']
+                props['lower_reservoir'] += props['hbv_perc']
+            else:
+                props['lower_reservoir'] += props['runoff_mean']
+                props['runoff_mean'] = 0.0
+
+            if props['lower_reservoir'] > 0.0:
+                soil_layers['Q2'] = props['lower_reservoir'] * props['hbv_ck2']
+                props['lower_reservoir'] -= soil_layers['Q2']
+            else:
+                soil_layers['Q2'] = 0.0
+
+            soil_layers['Qall'] = soil_layers['Q0'] + soil_layers['Q1'] + soil_layers['Q2']
+
+        self.soils = dict(zip(self.stw1[i]['properties']['WSHD_ID']), soil_layers)
 
 
     def excess_precip_to_runoff(self):

@@ -16,15 +16,18 @@ class Test_hbv(TestCase):
     def setup_class(klass):
         print "setting up class " + klass.__name__
         Test_hbv.args = {
-            'image_res': 30,
-            'catch_area': 50000,
-            'catch_area': 50000,
+
             'pp_temp_thres': 2,
             'p_base': 10,
             'ddf': 0.02,
             'soil_max_wat': 50.0,
             'soil_beta': 0.5,
             'aet_lp_param': 0.5,
+            'storage_parameter_1': 50,
+            'storage_parameter_1': 50,
+            'surface_conductance': 50,
+            'mid_layer_conductance': 50,
+            'lower_layer_conductance': 50,
         }
         Test_hbv.swe_o = np.zeros((20, 30))
         Test_hbv.pond_o = np.zeros_like(Test_hbv.swe_o)
@@ -111,12 +114,12 @@ class Test_hbv(TestCase):
 
     def test_discharge(self):
         #precip = rio.open('./tests/test_data/PRCP201301_thematic.tif')
-        precip = rio.open('./tests/test_data/DEM_64m_1992.tif')
+        precip = rio.open('test_data/DEM_64m_1992.tif')
         affine = precip.affine
         runoff = precip.read()
         self.ohbv.runoff = runoff[0, :, :]
         assert(isinstance(self.ohbv.runoff, np.ndarray))
-        self.ohbv.discharge('./tests/test_data/WBDHU8_MT.shp', affine)
+        self.ohbv.discharge('test_data/WBDHU8_MT.shp', affine)
         #ro_map = json.dumps(self.ohbv.stw1)
         geom = self.ohbv.stw1[0]['geometry']
 
