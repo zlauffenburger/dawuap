@@ -1,10 +1,24 @@
 from __future__ import division
+from abc import ABCMeta, abstractmethod
 import numpy as np
 import rasterstats as rst
 import rasterio as rio
 
 
-class hbv(object):
+class rrmodel(object):
+    """
+    This is a base class that defines the basic interface of rainfall runoff models
+    """
+    __metaclass__ = ABCMeta
+
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def runoff(self):
+        pass
+
+class hbv(rrmodel):
     """Implementation of the classic HVB rainfall-runoff model
 
     """
@@ -43,7 +57,7 @@ class hbv(object):
         # soil state and flux variables
         self.sm = sm_o
         self.delta_sm = np.zeros_like(self.swe)
-        self.runoff = np.zeros_like(self.swe)
+        self.ovlnd_flow = np.zeros_like(self.swe)
         self.stw1 = stw1_o
         self.stw2 = stw2_o
 
@@ -91,18 +105,18 @@ class hbv(object):
 
         # For cell where soil moisture is already at capacity, runoff is all the ponded water plus excess water in soil
         ind_sm_geq_fcap = np.greater_equal(self.sm, self.fcap)
-        self.runoff[ind_sm_geq_fcap] = self.pond[ind_sm_geq_fcap] + (self.sm - self.fcap)[ind_sm_geq_fcap]
+        self.ovlnd_flow[ind_sm_geq_fcap] = self.pond[ind_sm_geq_fcap] + (self.sm - self.fcap)[ind_sm_geq_fcap]
         self.sm[ind_sm_geq_fcap] = self.fcap
 
         # in all other cells calculate the portion of ponded water that goes into the soil storage
         ind_sm_lt_fcap = np.logical_not(ind_sm_geq_fcap)
         self.delta_sm[ind_sm_lt_fcap] = (self.pond * (1 - np.power((self.sm/self.fcap), self.beta)))[ind_sm_lt_fcap]
         self.sm[ind_sm_lt_fcap] += self.delta_sm[ind_sm_lt_fcap]
-        self.runoff[ind_sm_lt_fcap] = (self.pond - self.delta_sm)[[ind_sm_lt_fcap]]
+        self.ovlnd_flow[ind_sm_lt_fcap] = (self.pond - self.delta_sm)[[ind_sm_lt_fcap]]
 
         # Check if cell exceed storage capacity after adding delta_sm
         ind_sm_geq_fcap = np.greater_equal(self.sm, self.fcap)
-        self.runoff[ind_sm_geq_fcap] += (self.sm - self.fcap)[ind_sm_geq_fcap]
+        self.ovlnd_flow[ind_sm_geq_fcap] += (self.sm - self.fcap)[ind_sm_geq_fcap]
         self.sm[ind_sm_geq_fcap] = self.fcap
 
         # if there is sufficient soil moisture to satisfy aet, reduce sm
@@ -113,11 +127,11 @@ class hbv(object):
         self.aet[ind_sm_leq_aet] = self.sm[ind_sm_leq_aet]
         self.sm[ind_sm_leq_aet] = 0.0
 
-    def discharge(self, shp_wtshds, affine=None, stats=['mean']):
 
+    def precipitation_excess(self, shp_wtshds, affine=None, stats=['mean']):
 
         # builds a geojson object with required statistics for each catchment
-        self.stw1 = rst.zonal_stats(shp_wtshds, self.runoff, nodata=-32768, affine=affine, geojson_out=True,
+        self.stw1 = rst.zonal_stats(shp_wtshds, self.ovlnd_flow, nodata=-32768, affine=affine, geojson_out=True,
                                     prefix='runoff_', stats=stats)
 
         soil_layers = {}
@@ -154,16 +168,17 @@ class hbv(object):
         self.soils = dict(zip(self.stw1[i]['properties']['WSHD_ID']), soil_layers)
 
 
-    def excess_precip_to_runoff(self):
+    def runoff(self):
         def u(i):
             return np.array(
                 - ((self.p_base - 2 * i + 2) * np.abs(self.p_base - 2 * i + 2) + (2 * i - self.p_base) * np.abs(
                     2 * i - self.p_base) - 4 * self.p_base) / (2 * self.p_base ^ 2)).clip(min=0)
 
         v = np.array([0, 0, 0, 0, 2, 3, 0, 2.3, 1.4, 2, 0, 0, 0, 0, 0, 0.2, 1.2, 2.2, 1.5, 0, 0, 0, 0])
-        Q = np.convolve(v, u(np.arange(1, 10)))
+        Q = np.convolve(v, u(np.arange(1, 100)))
         print np.trapz(v)
         print np.trapz(Q)
-        print np.trapz(u(np.arange(1, 10)))
+        print 'area of triangle', np.trapz(u(np.arange(0, 12)))
+        print self.p_base, u(np.arange(0, 12))
 
         return Q

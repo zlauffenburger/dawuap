@@ -16,7 +16,8 @@ class Test_hbv(TestCase):
     def setup_class(klass):
         print "setting up class " + klass.__name__
         Test_hbv.args = {
-
+            'image_res': 30,
+            'catch_area': 50000,
             'pp_temp_thres': 2,
             'p_base': 10,
             'ddf': 0.02,
@@ -101,7 +102,7 @@ class Test_hbv(TestCase):
         pet = np.ones_like(Test_hbv.swe_o) * 0.0
         self.ohbv.pond = precip
         self.ohbv.soil_processes(pet)
-        np.testing.assert_array_equal(self.ohbv.runoff, precip, 'all rain', verbose=True)
+        np.testing.assert_array_equal(self.ohbv.ovlnd_flow, precip, 'all rain', verbose=True)
 
     def test_soil_processes_allinfiltrates(self):
         self.ohbv.sm = np.zeros_like(Test_hbv.swe_o) + 0.0
@@ -109,17 +110,20 @@ class Test_hbv(TestCase):
         pet = np.ones_like(Test_hbv.swe_o) * 0.0
         self.ohbv.pond = precip
         self.ohbv.soil_processes(pet)
-        np.testing.assert_array_equal(self.ohbv.runoff, np.zeros_like(Test_hbv.swe_o), 'all rain runs off', verbose=True)
+        np.testing.assert_array_equal(self.ohbv.ovlnd_flow, np.zeros_like(Test_hbv.swe_o), 'all rain runs off', verbose=True)
         np.testing.assert_array_equal(self.ohbv.sm, precip, 'all rain infiltrates', verbose=True)
 
-    def test_discharge(self):
+    """
+    def test_precipitation_excess(self):
         #precip = rio.open('./tests/test_data/PRCP201301_thematic.tif')
         precip = rio.open('test_data/DEM_64m_1992.tif')
         affine = precip.affine
         runoff = precip.read()
         self.ohbv.runoff = runoff[0, :, :]
         assert(isinstance(self.ohbv.runoff, np.ndarray))
-        self.ohbv.discharge('test_data/WBDHU8_MT.shp', affine)
+
+        self.ohbv.precipitation_excess('test_data/WBDHU8_MT.shp', affine)
+
         #ro_map = json.dumps(self.ohbv.stw1)
         geom = self.ohbv.stw1[0]['geometry']
 
@@ -130,6 +134,9 @@ class Test_hbv(TestCase):
         ax.add_patch(PolygonPatch(geom, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2))
         ax.axis('scaled')
         plt.show()
+     """
+    def test_runoff(self):
+        self.ohbv.runoff()
 
 
 
