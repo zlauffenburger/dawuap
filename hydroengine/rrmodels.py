@@ -5,10 +5,11 @@ import rasterstats as rst
 import rasterio as rio
 
 
-class rrmodel(metaclass=ABCMeta):
+class rrmodel(object):
     """
     This is a base class that defines the basic interface of rainfall runoff models
     """
+    __metaclass__ = ABCMeta
     def __init__(self):
         pass
 
@@ -16,7 +17,7 @@ class rrmodel(metaclass=ABCMeta):
     def runoff(self):
         pass
 
-class hbv(object):
+class hbv(rrmodel):
     """Implementation of the classic HVB rainfall-runoff model
 
     """

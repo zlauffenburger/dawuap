@@ -108,22 +108,27 @@ class Test_hbv(TestCase):
         np.testing.assert_array_equal(self.ohbv.runoff, np.zeros_like(Test_hbv.swe_o), 'all rain runs off', verbose=True)
         np.testing.assert_array_equal(self.ohbv.sm, precip, 'all rain infiltrates', verbose=True)
 
-    def test_discharge(self):
+    def test_precipitation_excess(self):
         #precip = rio.open('./tests/test_data/PRCP201301_thematic.tif')
-        precip = rio.open('./tests/test_data/DEM_64m_1992.tif')
+        precip = rio.open('./tests/test_data/DEM_1000m_NetworkLite.tif')
         affine = precip.affine
         runoff = precip.read()
         self.ohbv.runoff = runoff[0, :, :]
         assert(isinstance(self.ohbv.runoff, np.ndarray))
-        self.ohbv.precipitation_excess('./tests/test_data/WBDHU8_MT.shp', affine)
+        self.ohbv.precipitation_excess('./tests/test_data/HUC8_NetworkLite.shp', affine)
         #ro_map = json.dumps(self.ohbv.stw1)
         geom = self.ohbv.stw1[0]['geometry']
+        geom2 = self.ohbv.stw1[1]['geometry']
+        geom3 = self.ohbv.stw1[2]['geometry']
+
 
 
         BLUE = '#6699cc'
         fig = plt.figure()
         ax = fig.gca()
         ax.add_patch(PolygonPatch(geom, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2))
+        ax.add_patch(PolygonPatch(geom2, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2))
+        ax.add_patch(PolygonPatch(geom3, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2))
         ax.axis('scaled')
         plt.show()
 
