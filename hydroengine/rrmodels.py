@@ -10,6 +10,7 @@ class rrmodel(object):
     This is a base class that defines the basic interface of rainfall runoff models
     """
     __metaclass__ = ABCMeta
+
     def __init__(self):
         pass
 
@@ -39,6 +40,14 @@ class hbv(rrmodel):
         self.beta = params['soil_beta']
         self.lp = params['aet_lp_param']
 
+        # self.hl1 = params['storage_parameter_1']
+        # self.hl2 = params['storage_parameter_2']
+        #
+        # self.ck0 = params['surface_conductance']
+        # self.ck1 = params['mid_layer_conductance']
+        # self.ck2 = params['lower_layer_conductance']
+
+        self.soils = {}
 
         # snow state and flux variables
         self.swe = swe_o
@@ -48,7 +57,7 @@ class hbv(rrmodel):
         # soil state and flux variables
         self.sm = sm_o
         self.delta_sm = np.zeros_like(self.swe)
-        self.runoff = np.zeros_like(self.swe)
+        self.ovlnd_flow = np.zeros_like(self.swe)
         self.stw1 = stw1_o
         self.stw2 = stw2_o
 
@@ -96,18 +105,18 @@ class hbv(rrmodel):
 
         # For cell where soil moisture is already at capacity, runoff is all the ponded water plus excess water in soil
         ind_sm_geq_fcap = np.greater_equal(self.sm, self.fcap)
-        self.runoff[ind_sm_geq_fcap] = self.pond[ind_sm_geq_fcap] + (self.sm - self.fcap)[ind_sm_geq_fcap]
+        self.ovlnd_flow[ind_sm_geq_fcap] = self.pond[ind_sm_geq_fcap] + (self.sm - self.fcap)[ind_sm_geq_fcap]
         self.sm[ind_sm_geq_fcap] = self.fcap
 
         # in all other cells calculate the portion of ponded water that goes into the soil storage
         ind_sm_lt_fcap = np.logical_not(ind_sm_geq_fcap)
         self.delta_sm[ind_sm_lt_fcap] = (self.pond * (1 - np.power((self.sm/self.fcap), self.beta)))[ind_sm_lt_fcap]
         self.sm[ind_sm_lt_fcap] += self.delta_sm[ind_sm_lt_fcap]
-        self.runoff[ind_sm_lt_fcap] = (self.pond - self.delta_sm)[[ind_sm_lt_fcap]]
+        self.ovlnd_flow[ind_sm_lt_fcap] = (self.pond - self.delta_sm)[[ind_sm_lt_fcap]]
 
         # Check if cell exceed storage capacity after adding delta_sm
         ind_sm_geq_fcap = np.greater_equal(self.sm, self.fcap)
-        self.runoff[ind_sm_geq_fcap] += (self.sm - self.fcap)[ind_sm_geq_fcap]
+        self.ovlnd_flow[ind_sm_geq_fcap] += (self.sm - self.fcap)[ind_sm_geq_fcap]
         self.sm[ind_sm_geq_fcap] = self.fcap
 
         # if there is sufficient soil moisture to satisfy aet, reduce sm
@@ -118,15 +127,45 @@ class hbv(rrmodel):
         self.aet[ind_sm_leq_aet] = self.sm[ind_sm_leq_aet]
         self.sm[ind_sm_leq_aet] = 0.0
 
-    def precipitation_excess(self, shp_wtshds, affine=None):
+
+    def precipitation_excess(self, shp_wtshds, affine=None, stats=['mean']):
 
         # builds a geojson object with required statistics for each catchment
-        self.stw1 = rst.zonal_stats(shp_wtshds, self.runoff, nodata=-32768, affine=affine, geojson_out=True,
-                                    prefix='runoff_', stats=['mean'])
+        self.stw1 = rst.zonal_stats(shp_wtshds, self.ovlnd_flow, nodata=-32768, affine=affine, geojson_out=True,
+                                    prefix='runoff_', stats=stats)
 
+        soil_layers = {}
 
+        for i in range(len(self.stw1)):
+            props = self.stw1[i]['properties']
+            if props['runoff_mean'] > props['hbv_hl1']:
+                soil_layers['Q0'] = (props['runoff_mean'] - props['hbv_hl1']) * props['hbv_ck0']
+                props['runoff_mean'] -= soil_layers['Q0']
+            else:
+                soil_layers['Q0'] = 0.0
 
+            if props['runoff_mean'] > 0.0:
+                soil_layers['Q1'] = props['runoff_mean'] * props['hbv_ck1']
+                props['runoff_mean'] -= soil_layers['Q1']
+            else:
+                soil_layers['Q1'] = 0.0
 
+            if props['runoff_mean'] > props['hbv_perc']:
+                props['runoff_mean'] -= props['hbv_perc']
+                props['lower_reservoir'] += props['hbv_perc']
+            else:
+                props['lower_reservoir'] += props['runoff_mean']
+                props['runoff_mean'] = 0.0
+
+            if props['lower_reservoir'] > 0.0:
+                soil_layers['Q2'] = props['lower_reservoir'] * props['hbv_ck2']
+                props['lower_reservoir'] -= soil_layers['Q2']
+            else:
+                soil_layers['Q2'] = 0.0
+
+            soil_layers['Qall'] = soil_layers['Q0'] + soil_layers['Q1'] + soil_layers['Q2']
+
+        self.soils = dict(zip(self.stw1[i]['properties']['WSHD_ID']), soil_layers)
 
 
     def runoff(self):
@@ -136,9 +175,10 @@ class hbv(rrmodel):
                     2 * i - self.p_base) - 4 * self.p_base) / (2 * self.p_base ^ 2)).clip(min=0)
 
         v = np.array([0, 0, 0, 0, 2, 3, 0, 2.3, 1.4, 2, 0, 0, 0, 0, 0, 0.2, 1.2, 2.2, 1.5, 0, 0, 0, 0])
-        Q = np.convolve(v, u(np.arange(1, 10)))
+        Q = np.convolve(v, u(np.arange(1, 100)))
         print np.trapz(v)
         print np.trapz(Q)
-        print np.trapz(u(np.arange(1, 10)))
+        print 'area of triangle', np.trapz(u(np.arange(0, 12)))
+        print self.p_base, u(np.arange(0, 12))
 
         return Q

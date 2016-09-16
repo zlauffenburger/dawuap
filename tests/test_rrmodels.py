@@ -24,6 +24,11 @@ class Test_hbv(TestCase):
             'soil_max_wat': 50.0,
             'soil_beta': 0.5,
             'aet_lp_param': 0.5,
+            'storage_parameter_1': 50,
+            'storage_parameter_1': 50,
+            'surface_conductance': 50,
+            'mid_layer_conductance': 50,
+            'lower_layer_conductance': 50,
         }
         Test_hbv.swe_o = np.zeros((20, 30))
         Test_hbv.pond_o = np.zeros_like(Test_hbv.swe_o)
@@ -97,7 +102,7 @@ class Test_hbv(TestCase):
         pet = np.ones_like(Test_hbv.swe_o) * 0.0
         self.ohbv.pond = precip
         self.ohbv.soil_processes(pet)
-        np.testing.assert_array_equal(self.ohbv.runoff, precip, 'all rain', verbose=True)
+        np.testing.assert_array_equal(self.ohbv.ovlnd_flow, precip, 'all rain', verbose=True)
 
     def test_soil_processes_allinfiltrates(self):
         self.ohbv.sm = np.zeros_like(Test_hbv.swe_o) + 0.0
@@ -105,17 +110,33 @@ class Test_hbv(TestCase):
         pet = np.ones_like(Test_hbv.swe_o) * 0.0
         self.ohbv.pond = precip
         self.ohbv.soil_processes(pet)
-        np.testing.assert_array_equal(self.ohbv.runoff, np.zeros_like(Test_hbv.swe_o), 'all rain runs off', verbose=True)
+        np.testing.assert_array_equal(self.ohbv.ovlnd_flow, np.zeros_like(Test_hbv.swe_o), 'all rain runs off', verbose=True)
         np.testing.assert_array_equal(self.ohbv.sm, precip, 'all rain infiltrates', verbose=True)
 
+    """
     def test_precipitation_excess(self):
+>>>>>>> 4751aa7b961c8ba748c9524a6585de80633a70fc
         #precip = rio.open('./tests/test_data/PRCP201301_thematic.tif')
+<<<<<<< HEAD
         precip = rio.open('./tests/test_data/DEM_1000m_NetworkLite.tif')
+||||||| merged common ancestors
+        precip = rio.open('./tests/test_data/DEM_64m_1992.tif')
+=======
+        precip = rio.open('test_data/DEM_64m_1992.tif')
+>>>>>>> 4751aa7b961c8ba748c9524a6585de80633a70fc
         affine = precip.affine
         runoff = precip.read()
         self.ohbv.runoff = runoff[0, :, :]
         assert(isinstance(self.ohbv.runoff, np.ndarray))
+<<<<<<< HEAD
         self.ohbv.precipitation_excess('./tests/test_data/HUC8_NetworkLite.shp', affine)
+||||||| merged common ancestors
+        self.ohbv.precipitation_excess('./tests/test_data/WBDHU8_MT.shp', affine)
+=======
+
+        self.ohbv.precipitation_excess('test_data/WBDHU8_MT.shp', affine)
+
+>>>>>>> 4751aa7b961c8ba748c9524a6585de80633a70fc
         #ro_map = json.dumps(self.ohbv.stw1)
         geom = self.ohbv.stw1[0]['geometry']
         geom2 = self.ohbv.stw1[1]['geometry']
@@ -131,6 +152,9 @@ class Test_hbv(TestCase):
         ax.add_patch(PolygonPatch(geom3, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2))
         ax.axis('scaled')
         plt.show()
+     """
+    def test_runoff(self):
+        self.ohbv.runoff()
 
 
 
