@@ -32,7 +32,6 @@ class hbv(rrmodel):
 
         # snow paramters
         self.t_thres = params['pp_temp_thres']
-        self.p_base = params['p_base']
         self.ddf = params['ddf']
 
         # soil paramters
@@ -46,6 +45,9 @@ class hbv(rrmodel):
         # self.ck0 = params['surface_conductance']
         # self.ck1 = params['mid_layer_conductance']
         # self.ck2 = params['lower_layer_conductance']
+
+        # overland flow transformation parameters
+        self.p_base = params['p_base']  # base of
 
         self.soils = {}
 
@@ -173,6 +175,12 @@ class hbv(rrmodel):
             return np.array(
                 - ((self.p_base - 2 * i + 2) * np.abs(self.p_base - 2 * i + 2) + (2 * i - self.p_base) * np.abs(
                     2 * i - self.p_base) - 4 * self.p_base) / (2 * self.p_base ^ 2)).clip(min=0)
+
+        Q = soil_layers['Qall']
+        runoff = soil_layers['']
+
+
+
 
         v = np.array([0, 0, 0, 0, 2, 3, 0, 2.3, 1.4, 2, 0, 0, 0, 0, 0, 0.2, 1.2, 2.2, 1.5, 0, 0, 0, 0])
         Q = np.convolve(v, u(np.arange(1, 100)))
