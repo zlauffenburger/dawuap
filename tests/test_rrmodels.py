@@ -43,7 +43,7 @@ class Test_hbv(TestCase):
 
     def setUp(self):
         print "setting up " + self.__class__.__name__
-        self.ohbv = hydroengine.hbv(Test_hbv.swe_o, Test_hbv.pond_o, Test_hbv.sm_o, Test_hbv.stw1_o, Test_hbv.stw2_o, **Test_hbv.args)
+        self.ohbv = hydroengine.HBV(Test_hbv.swe_o, Test_hbv.pond_o, Test_hbv.sm_o, Test_hbv.stw1_o, Test_hbv.stw2_o, **Test_hbv.args)
 
     def tearDown(self):
         Test_hbv.swe_o = np.zeros((20, 30))
@@ -62,7 +62,7 @@ class Test_hbv(TestCase):
         precip = np.ones_like(Test_hbv.swe_o) * 0.03
         t_max = np.ones_like(Test_hbv.swe_o) * -3
         t_min = np.ones_like(Test_hbv.swe_o) * -4
-        self.ohbv.snowpack(precip, t_max, t_min)
+        self.ohbv.snow_pack(precip, t_max, t_min)
         np.testing.assert_array_equal(self.ohbv.swe, np.ones_like(Test_hbv.swe_o)*0.03, 'swe')
         np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(Test_hbv.swe_o) * 0.0, 'pond')
 
@@ -72,7 +72,7 @@ class Test_hbv(TestCase):
         precip = np.ones_like(Test_hbv.swe_o) * 0.03
         t_max = np.ones_like(Test_hbv.swe_o) * 5
         t_min = np.ones_like(Test_hbv.swe_o) * 3
-        self.ohbv.snowpack(precip, t_max, t_min)
+        self.ohbv.snow_pack(precip, t_max, t_min)
         np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(Test_hbv.swe_o) * 0.03)
 
     #@with_setup(setup, teardown)
@@ -81,7 +81,7 @@ class Test_hbv(TestCase):
         precip = np.ones_like(Test_hbv.swe_o) * 0.03
         t_max = np.ones_like(Test_hbv.swe_o) * 3
         t_min = np.ones_like(Test_hbv.swe_o) * 1
-        self.ohbv.snowpack(precip, t_max, t_min)
+        self.ohbv.snow_pack(precip, t_max, t_min)
         np.testing.assert_array_equal(self.ohbv.swe, np.ones_like(Test_hbv.swe_o)*0.03/2, 'equal swe', verbose=True)
         np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(Test_hbv.swe_o) * 0.03/2, 'equal rain', verbose=True)
 
@@ -91,7 +91,7 @@ class Test_hbv(TestCase):
         t_max = np.ones_like(Test_hbv.swe_o) * 4
         t_min = np.ones_like(Test_hbv.swe_o) * 1
         self.ohbv.ddf= 100
-        self.ohbv.snowpack(precip, t_max, t_min)
+        self.ohbv.snow_pack(precip, t_max, t_min)
         np.testing.assert_array_equal(self.ohbv.swe, np.ones_like(Test_hbv.swe_o) * 0.0, 'zero swe', verbose=True)
         np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(Test_hbv.swe_o) * 0.03, 'all rain', verbose=True)
 
@@ -154,7 +154,7 @@ class Test_hbv(TestCase):
         plt.show()
      """
     def test_runoff(self):
-        self.ohbv.runoff()
+        self.ohbv.runoff
 
 
 

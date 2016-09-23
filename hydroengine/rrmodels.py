@@ -1,11 +1,59 @@
 from __future__ import division
 from abc import ABCMeta, abstractmethod
+import cPickle as pickle
 import numpy as np
 import rasterstats as rst
 import rasterio as rio
 
 
-class rrmodel(object):
+class Soil(object):
+    def __init__(self, ur=0, lr=0, q0=0, q1=0, q2=0, qall=0, base=0):
+
+        self.upper_reservoir = ur
+        self.lower_reservoir = lr
+
+        self.Q0 = q0
+        self.Q1 = q1
+        self.Q2 = q2
+        self.Qall = qall
+
+        self.base = base
+
+
+    @property
+    def runoff(self, value):
+        self._runoff = value
+
+    @property.getter
+    def runoff(self):
+        return self._runoff[0]
+
+    def __hash__(self):
+        return hash(self.upper_reservoir,
+                    self.lower_reservoir,
+                    self.Q0,
+                    self.Q1,
+                    self.Q2,
+                    self.Qall)
+
+    def __eq__(self, other):
+        return (self.upper_reservoir,
+                    self.lower_reservoir,
+                    self.Q0,
+                    self.Q1,
+                    self.Q2,
+                    self.Qall) == (other.upper_reservoir,
+                                   other.lower_reservoir,
+                                   other.Q0,
+                                   other.Q1,
+                                   other.Q2,
+                                   other.Qall)
+
+    def __ne__(self, other):
+        return not (self == other)
+
+
+class RRmodel(object):
     """
     This is a base class that defines the basic interface of rainfall runoff models
     """
@@ -18,12 +66,13 @@ class rrmodel(object):
     def runoff(self):
         pass
 
-class hbv(rrmodel):
+
+class HBV(RRmodel):
     """Implementation of the classic HVB rainfall-runoff model
 
     """
 
-    def __init__(self, swe_o, pond_o, sm_o, stw1_o, stw2_o, **params):
+    def __init__(self, swe_o, pond_o, sm_o, soils_o={}, **params):
 
         # Geomtry information
         #self.pixel_area = params['image_res']*params['image_res']
@@ -49,7 +98,7 @@ class hbv(rrmodel):
         # overland flow transformation parameters
         self.p_base = params['p_base']  # base of
 
-        self.soils = {}
+        self.soils = soils_o # Soil reinitialization file. Dictionary with geo_json objects
 
         # snow state and flux variables
         self.swe = swe_o
@@ -60,13 +109,10 @@ class hbv(rrmodel):
         self.sm = sm_o
         self.delta_sm = np.zeros_like(self.swe)
         self.ovlnd_flow = np.zeros_like(self.swe)
-        self.stw1 = stw1_o
-        self.stw2 = stw2_o
 
-        self.aet = np.zeros_like(self.swe);
+        self.aet = np.zeros_like(self.swe)
 
-
-    def snowpack(self, incid_precip, t_max, t_min):
+    def snow_pack(self, incid_precip, t_max, t_min):
 
         swe = np.zeros_like(self.swe)
         rain = np.zeros_like(self.swe)
@@ -129,64 +175,62 @@ class hbv(rrmodel):
         self.aet[ind_sm_leq_aet] = self.sm[ind_sm_leq_aet]
         self.sm[ind_sm_leq_aet] = 0.0
 
-
     def precipitation_excess(self, shp_wtshds, affine=None, stats=['mean']):
 
         # builds a geojson object with required statistics for each catchment
-        self.stw1 = rst.zonal_stats(shp_wtshds, self.ovlnd_flow, nodata=-32768, affine=affine, geojson_out=True,
+        stw1 = rst.zonal_stats(shp_wtshds, self.ovlnd_flow, nodata=-32768, affine=affine, geojson_out=True,
                                     prefix='runoff_', stats=stats)
 
         soil_layers = {}
 
-        for i in range(len(self.stw1)):
-            props = self.stw1[i]['properties']
-            if props['runoff_mean'] > props['hbv_hl1']:
-                soil_layers['Q0'] = (props['runoff_mean'] - props['hbv_hl1']) * props['hbv_ck0']
-                props['runoff_mean'] -= soil_layers['Q0']
+        for i in range(len(stw1)):
+            if not self.soils: # if there is no dictionary from a previous time step, create a new soil object
+                soil_layers = Soil()
             else:
-                soil_layers['Q0'] = 0.0
+                soil_layers = self.soils[i][1]
 
-            if props['runoff_mean'] > 0.0:
-                soil_layers['Q1'] = props['runoff_mean'] * props['hbv_ck1']
-                props['runoff_mean'] -= soil_layers['Q1']
+            props = stw1[i]['properties']
+            soil_layers.upper_reservoir += props['runoff_mean']
+            if soil_layers.upper_reservoir > props['hbv_hl1']:
+                soil_layers.Q0 = (soil_layers.upper_reservoir - props['hbv_hl1']) * props['hbv_ck0']
+                soil_layers.upper_reservoir -= soil_layers.Q0
             else:
-                soil_layers['Q1'] = 0.0
+                soil_layers.Q0 = 0.0
 
-            if props['runoff_mean'] > props['hbv_perc']:
-                props['runoff_mean'] -= props['hbv_perc']
-                props['lower_reservoir'] += props['hbv_perc']
+            if soil_layers.upper_reservoir > 0.0:
+                soil_layers.Q1 = soil_layers.upper_reservoir * props['hbv_ck1']
+                soil_layers.upper_reservoir -= soil_layers.Q1
             else:
-                props['lower_reservoir'] += props['runoff_mean']
-                props['runoff_mean'] = 0.0
+                soil_layers.Q1 = 0.0
 
-            if props['lower_reservoir'] > 0.0:
-                soil_layers['Q2'] = props['lower_reservoir'] * props['hbv_ck2']
-                props['lower_reservoir'] -= soil_layers['Q2']
+            if soil_layers.upper_reservoir > props['hbv_perc']:
+                soil_layers.upper_reservoir -= props['hbv_perc']
+                soil_layers.lower_reservoir += props['hbv_perc']
             else:
-                soil_layers['Q2'] = 0.0
+                soil_layers.lower_reservoir += soil_layers.upper_reservoir
+                soil_layers.upper_reservoir = 0.0
 
-            soil_layers['Qall'] = soil_layers['Q0'] + soil_layers['Q1'] + soil_layers['Q2']
+            if soil_layers.lower_reservoir > 0.0:
+                soil_layers.Q2 = soil_layers.lower_reservoir * props['hbv_ck2']
+                soil_layers.lower_reservoir -= soil_layers.Q2
+            else:
+                soil_layers.Q2 = 0.0
 
-        self.soils = dict(zip(self.stw1[i]['properties']['WSHD_ID']), soil_layers)
+            soil_layers.Qall = soil_layers.Q0 + soil_layers.Q1 + soil_layers.Q2
 
+        self.soils = dict(zip(stw1[i]['properties']['WSHD_ID']), soil_layers)
+        pickle.dump(self.soils, open("soils.pickled", "wb"))
 
-    def runoff(self):
-        def u(i):
+    def calculate_runoff(self, i):
+        def u(j, p_base):
             return np.array(
-                - ((self.p_base - 2 * i + 2) * np.abs(self.p_base - 2 * i + 2) + (2 * i - self.p_base) * np.abs(
-                    2 * i - self.p_base) - 4 * self.p_base) / (2 * self.p_base ^ 2)).clip(min=0)
+                - ((self.p_base - 2 * j + 2) * np.abs(self.p_base - 2 * j + 2) + (2 * j - self.p_base) * np.abs(
+                    2 * j - self.p_base) - 4 * self.p_base) / (2 * self.p_base ^ 2)).clip(min=0)
 
-        Q = soil_layers['Qall']
-        runoff = soil_layers['']
+        base = self.soils[i][1].uh_base
+        q = self.soils[i][1].Qall
+        delta_runoff = [q*u(k, base) for k in range(base)]
+        self.soils[i][1].runoff += delta_runoff
 
-
-
-
-        v = np.array([0, 0, 0, 0, 2, 3, 0, 2.3, 1.4, 2, 0, 0, 0, 0, 0, 0.2, 1.2, 2.2, 1.5, 0, 0, 0, 0])
-        Q = np.convolve(v, u(np.arange(1, 100)))
-        print np.trapz(v)
-        print np.trapz(Q)
-        print 'area of triangle', np.trapz(u(np.arange(0, 12)))
-        print self.p_base, u(np.arange(0, 12))
-
-        return Q
+    def runoff(self,i):
+        return self.soils[i][1].runoff
