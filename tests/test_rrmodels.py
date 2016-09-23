@@ -33,8 +33,6 @@ class Test_hbv(TestCase):
         Test_hbv.swe_o = np.zeros((20, 30))
         Test_hbv.pond_o = np.zeros_like(Test_hbv.swe_o)
         Test_hbv.sm_o = np.zeros_like(Test_hbv.swe_o)
-        Test_hbv.stw1_o = np.zeros_like(Test_hbv.swe_o)
-        Test_hbv.stw2_o = np.zeros_like(Test_hbv.swe_o)
 
 
     @classmethod
@@ -43,7 +41,7 @@ class Test_hbv(TestCase):
 
     def setUp(self):
         print "setting up " + self.__class__.__name__
-        self.ohbv = hydroengine.HBV(Test_hbv.swe_o, Test_hbv.pond_o, Test_hbv.sm_o, Test_hbv.stw1_o, Test_hbv.stw2_o, **Test_hbv.args)
+        self.ohbv = hydroengine.HBV(Test_hbv.swe_o, Test_hbv.pond_o, Test_hbv.sm_o, **Test_hbv.args)
 
     def tearDown(self):
         Test_hbv.swe_o = np.zeros((20, 30))
@@ -52,7 +50,6 @@ class Test_hbv(TestCase):
     #@with_setup(setup, teardown)
     def TestInitialization(self):
         np.testing.assert_array_equal(Test_hbv.swe_o, self.ohbv.swe)
-        nose.tools.assert_equals(self.ohbv.p_base, 10)
         nose.tools.assert_equals(self.ohbv.t_thres, 2)
         nose.tools.assert_equals(self.ohbv.ddf, 0.02)
 
@@ -113,48 +110,39 @@ class Test_hbv(TestCase):
         np.testing.assert_array_equal(self.ohbv.ovlnd_flow, np.zeros_like(Test_hbv.swe_o), 'all rain runs off', verbose=True)
         np.testing.assert_array_equal(self.ohbv.sm, precip, 'all rain infiltrates', verbose=True)
 
-    """
+
     def test_precipitation_excess(self):
->>>>>>> 4751aa7b961c8ba748c9524a6585de80633a70fc
-        #precip = rio.open('./tests/test_data/PRCP201301_thematic.tif')
-<<<<<<< HEAD
-        precip = rio.open('./tests/test_data/DEM_1000m_NetworkLite.tif')
-||||||| merged common ancestors
-        precip = rio.open('./tests/test_data/DEM_64m_1992.tif')
-=======
-        precip = rio.open('test_data/DEM_64m_1992.tif')
->>>>>>> 4751aa7b961c8ba748c9524a6585de80633a70fc
+
+        precip = rio.open('test_data/PRCP201301_thematic.tif')
+        #precip = rio.open('test_data/DEM_64m_1992.tif')
         affine = precip.affine
         runoff = precip.read()
-        self.ohbv.runoff = runoff[0, :, :]
-        assert(isinstance(self.ohbv.runoff, np.ndarray))
-<<<<<<< HEAD
-        self.ohbv.precipitation_excess('./tests/test_data/HUC8_NetworkLite.shp', affine)
-||||||| merged common ancestors
-        self.ohbv.precipitation_excess('./tests/test_data/WBDHU8_MT.shp', affine)
-=======
+        self.ohbv.ovlnd_flow = runoff[0, :, :]
+        assert(isinstance(self.ohbv.ovlnd_flow, np.ndarray))
 
-        self.ohbv.precipitation_excess('test_data/WBDHU8_MT.shp', affine)
-
->>>>>>> 4751aa7b961c8ba748c9524a6585de80633a70fc
-        #ro_map = json.dumps(self.ohbv.stw1)
-        geom = self.ohbv.stw1[0]['geometry']
-        geom2 = self.ohbv.stw1[1]['geometry']
-        geom3 = self.ohbv.stw1[2]['geometry']
+        self.ohbv.precipitation_excess('test_data/HUC8_NetworkLite.shp', affine)
 
 
+        # #ro_map = json.dumps(self.ohbv.stw1)
+        # geom = self.ohbv.stw1[0]['geometry']
+        # geom2 = self.ohbv.stw1[1]['geometry']
+        # geom3 = self.ohbv.stw1[2]['geometry']
+        #
+        #
+        #
+        # BLUE = '#6699cc'
+        # fig = plt.figure()
+        # ax = fig.gca()
+        # ax.add_patch(PolygonPatch(geom, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2))
+        # ax.add_patch(PolygonPatch(geom2, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2))
+        # ax.add_patch(PolygonPatch(geom3, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2))
+        # ax.axis('scaled')
+        # plt.show()
 
-        BLUE = '#6699cc'
-        fig = plt.figure()
-        ax = fig.gca()
-        ax.add_patch(PolygonPatch(geom, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2))
-        ax.add_patch(PolygonPatch(geom2, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2))
-        ax.add_patch(PolygonPatch(geom3, fc=BLUE, ec=BLUE, alpha=0.5, zorder=2))
-        ax.axis('scaled')
-        plt.show()
-     """
+    """
     def test_runoff(self):
         self.ohbv.runoff
+    """
 
 
 

@@ -7,7 +7,7 @@ import rasterio as rio
 
 
 class Soil(object):
-    def __init__(self, ur=0, lr=0, q0=0, q1=0, q2=0, qall=0, base=0):
+    def __init__(self, ur=0., lr=0., q0=0., q1=0., q2=0., qall=0., base=25):
 
         self.upper_reservoir = ur
         self.lower_reservoir = lr
@@ -24,7 +24,7 @@ class Soil(object):
     def runoff(self, value):
         self._runoff = value
 
-    @property.getter
+    @runoff.getter
     def runoff(self):
         return self._runoff[0]
 
@@ -72,7 +72,7 @@ class HBV(RRmodel):
 
     """
 
-    def __init__(self, swe_o, pond_o, sm_o, soils_o={}, **params):
+    def __init__(self, swe_o, pond_o, sm_o, soils_o=[], **params):
 
         # Geomtry information
         #self.pixel_area = params['image_res']*params['image_res']
@@ -175,10 +175,11 @@ class HBV(RRmodel):
     def precipitation_excess(self, shp_wtshds, affine=None, stats=['mean']):
 
         # builds a geojson object with required statistics for each catchment
-        stw1 = rst.zonal_stats(shp_wtshds, self.ovlnd_flow, nodata=-32768, affine=affine, geojson_out=True,
+        stw1 = rst.zonal_stats(shp_wtshds, self.ovlnd_flow, nodata=127, affine=affine, geojson_out=True,
                                     prefix='runoff_', stats=stats)
 
         soil_layers = {}
+        soils = []
 
         for i in range(len(stw1)):
             if not self.soils: # if there is no dictionary from a previous time step, create a new soil object
@@ -214,8 +215,9 @@ class HBV(RRmodel):
                 soil_layers.Q2 = 0.0
 
             soil_layers.Qall = soil_layers.Q0 + soil_layers.Q1 + soil_layers.Q2
+            soils.append((stw1[i]['id'], soil_layers))
 
-        self.soils = dict(zip(stw1[i]['properties']['WSHD_ID']), soil_layers)
+        self.soils = soils
         pickle.dump(self.soils, open("soils.pickled", "wb"))
 
     def calculate_runoff(self, i):
