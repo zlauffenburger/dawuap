@@ -83,7 +83,7 @@ class HBV(RRmodel):
         self.t_thres = params['pp_temp_thres']
         self.ddf = params['ddf']
 
-        # soil paramters
+        # distributed soil paramters
         self.fcap = params['soil_max_wat']
         self.beta = params['soil_beta']
         self.lp = params['aet_lp_param']
@@ -94,9 +94,6 @@ class HBV(RRmodel):
         # self.ck0 = params['surface_conductance']
         # self.ck1 = params['mid_layer_conductance']
         # self.ck2 = params['lower_layer_conductance']
-
-        # overland flow transformation parameters
-        self.p_base = params['p_base']  # base of
 
         self.soils = soils_o # Soil reinitialization file. Dictionary with geo_json objects
 
@@ -222,15 +219,24 @@ class HBV(RRmodel):
         pickle.dump(self.soils, open("soils.pickled", "wb"))
 
     def calculate_runoff(self, i):
+        """
+
+        :param i:
+        :return:
+        """
         def u(j, p_base):
+            """
+
+            :type p_base: scalar with base time of unit hydrograph
+            """
             return np.array(
-                - ((self.p_base - 2 * j + 2) * np.abs(self.p_base - 2 * j + 2) + (2 * j - self.p_base) * np.abs(
-                    2 * j - self.p_base) - 4 * self.p_base) / (2 * self.p_base ^ 2)).clip(min=0)
+                - ((p_base - 2 * j + 2) * np.abs(p_base - 2 * j + 2) + (2 * j - p_base) * np.abs(
+                    2 * j - p_base) - 4 * p_base) / (2 * p_base ^ 2)).clip(min=0)
 
         base = self.soils[i][1].uh_base
         q = self.soils[i][1].Qall
         delta_runoff = [q*u(k, base) for k in range(base)]
         self.soils[i][1].runoff += delta_runoff
 
-    def runoff(self,i):
+    def runoff(self, i):
         return self.soils[i][1].runoff
