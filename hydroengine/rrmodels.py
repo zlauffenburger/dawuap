@@ -59,7 +59,8 @@ class RRmodel(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self):
+    def __init__(self, dt):
+        self.dt = dt
         pass
 
     @abstractmethod
@@ -72,12 +73,12 @@ class HBV(RRmodel):
 
     """
 
-    def __init__(self, swe_o, pond_o, sm_o, soils_o=[], **params):
+    def __init__(self, dt, swe_o, pond_o, sm_o, soils_o=[], **params):
 
         # Geomtry information
         #self.pixel_area = params['image_res']*params['image_res']
         #self.catchment_area = params['catch_area']
-        #self.t_step = params['time_step']
+        super(HBV, self).__init__(dt)
 
         # snow paramters
         self.t_thres = params['pp_temp_thres']
@@ -188,15 +189,20 @@ class HBV(RRmodel):
                 soil_layers = self.soils[i][1]
 
             props = stw1[i]['properties']
+
+            # conversion stuff
+            hbv_ck0 = self.dt / props['hbv_ck0'] / 86400
+            hbv_ck1 = self.dt / props['hbv_ck1'] / 86400
+            hbv_ck2 = self.dt / props['hbv_ck2'] / 86400
             soil_layers.upper_reservoir += props['runoff_mean']
             if soil_layers.upper_reservoir > props['hbv_hl1']:
-                soil_layers.Q0 = (soil_layers.upper_reservoir - props['hbv_hl1']) * props['hbv_ck0']
+                soil_layers.Q0 = (soil_layers.upper_reservoir - props['hbv_hl1']) * hbv_ck0
                 soil_layers.upper_reservoir -= soil_layers.Q0
             else:
                 soil_layers.Q0 = 0.0
 
             if soil_layers.upper_reservoir > 0.0:
-                soil_layers.Q1 = soil_layers.upper_reservoir * props['hbv_ck1']
+                soil_layers.Q1 = soil_layers.upper_reservoir * hbv_ck1
                 soil_layers.upper_reservoir -= soil_layers.Q1
             else:
                 soil_layers.Q1 = 0.0
@@ -209,7 +215,7 @@ class HBV(RRmodel):
                 soil_layers.upper_reservoir = 0.0
 
             if soil_layers.lower_reservoir > 0.0:
-                soil_layers.Q2 = soil_layers.lower_reservoir * props['hbv_ck2']
+                soil_layers.Q2 = soil_layers.lower_reservoir * hbv_ck2
                 soil_layers.lower_reservoir -= soil_layers.Q2
             else:
                 soil_layers.Q2 = 0.0

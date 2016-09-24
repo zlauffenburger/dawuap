@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from .context import hydroengine
 import numpy as np
+import cPickle as pickle
 import nose
 import rasterstats as rst
 import rasterio as rio
@@ -41,7 +42,7 @@ class Test_hbv(TestCase):
 
     def setUp(self):
         print "setting up " + self.__class__.__name__
-        self.ohbv = hydroengine.HBV(Test_hbv.swe_o, Test_hbv.pond_o, Test_hbv.sm_o, **Test_hbv.args)
+        self.ohbv = hydroengine.HBV(86400, Test_hbv.swe_o, Test_hbv.pond_o, Test_hbv.sm_o, **Test_hbv.args)
 
     def tearDown(self):
         Test_hbv.swe_o = np.zeros((20, 30))
@@ -111,7 +112,7 @@ class Test_hbv(TestCase):
         np.testing.assert_array_equal(self.ohbv.sm, precip, 'all rain infiltrates', verbose=True)
 
 
-    def test_precipitation_excess(self):
+    def test_precipitation_excess_nosoilfile(self):
 
         precip = rio.open('test_data/PRCP201301_thematic.tif')
         #precip = rio.open('test_data/DEM_64m_1992.tif')
@@ -121,8 +122,18 @@ class Test_hbv(TestCase):
         assert(isinstance(self.ohbv.ovlnd_flow, np.ndarray))
 
         self.ohbv.precipitation_excess('test_data/HUC8_NetworkLite.shp', affine)
+        print self.ohbv.soils[0][1].Qall
 
+    def test_precipitation_excess_soilfile(self):
+        precip = rio.open('test_data/PRCP201301_thematic.tif')
+        # precip = rio.open('test_data/DEM_64m_1992.tif')
+        affine = precip.affine
+        runoff = precip.read()
+        self.ohbv.ovlnd_flow = runoff[0, :, :]
+        assert (isinstance(self.ohbv.ovlnd_flow, np.ndarray))
 
+        self.ohbv.soils = pickle.load(open('soils.pickled', "rb"))
+        self.ohbv.precipitation_excess('test_data/HUC8_NetworkLite.shp', affine)
         # #ro_map = json.dumps(self.ohbv.stw1)
         # geom = self.ohbv.stw1[0]['geometry']
         # geom2 = self.ohbv.stw1[1]['geometry']
