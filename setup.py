@@ -4,7 +4,7 @@ except ImportError:
     from distutils.core import setup
 
 config = {
-        'description': 'Hydrologi Engine for daWUAP model',
+        'description': 'Hydrologic Engine for daWUAP model',
         'author': 'Marco Maneta',
         'url': 'http://www.',
         'download_url': 'http://www.',

@@ -1,5 +1,5 @@
 from __future__ import division
-from abc import ABCMeta, abstractmethod
+from .RRmodel import RRmodel
 import cPickle as pickle
 import numpy as np
 import rasterstats as rst
@@ -17,7 +17,8 @@ class Soil(object):
         self.Q2 = q2
         self.Qall = qall
 
-        self.base = base
+        self.uh_base = base
+        self._runoff = np.zeros((base))
 
 
     @property
@@ -26,7 +27,7 @@ class Soil(object):
 
     @runoff.getter
     def runoff(self):
-        return self._runoff[0]
+        return self._runoff
 
     def __hash__(self):
         return hash(self.upper_reservoir,
@@ -53,21 +54,6 @@ class Soil(object):
         return not (self == other)
 
 
-class RRmodel(object):
-    """
-    This is a base class that defines the basic interface of rainfall runoff models
-    """
-    __metaclass__ = ABCMeta
-
-    def __init__(self, dt):
-        self.dt = dt
-        pass
-
-    @abstractmethod
-    def runoff(self):
-        pass
-
-
 class HBV(RRmodel):
     """Implementation of the classic HVB rainfall-runoff model
 
@@ -82,7 +68,7 @@ class HBV(RRmodel):
 
         # snow paramters
         self.t_thres = params['pp_temp_thres']
-        self.ddf = params['ddf']
+        self.ddf = params['ddf'] * self.dt / 86400
 
         # distributed soil paramters
         self.fcap = params['soil_max_wat']
@@ -221,12 +207,14 @@ class HBV(RRmodel):
                 soil_layers.Q2 = 0.0
 
             soil_layers.Qall = soil_layers.Q0 + soil_layers.Q1 + soil_layers.Q2
+            self._calculate_runoff(soil_layers)
             soils.append((stw1[i]['id'], soil_layers))
+
 
         self.soils = soils
         pickle.dump(self.soils, open("soils.pickled", "wb"))
 
-    def calculate_runoff(self, i):
+    def _calculate_runoff(self, soil_layer):
         """
 
         :param i:
@@ -241,10 +229,18 @@ class HBV(RRmodel):
                 - ((p_base - 2 * j + 2) * np.abs(p_base - 2 * j + 2) + (2 * j - p_base) * np.abs(
                     2 * j - p_base) - 4 * p_base) / (2 * p_base ^ 2)).clip(min=0)
 
-        base = self.soils[i][1].uh_base
-        q = self.soils[i][1].Qall
+        base = soil_layer.uh_base
+        q = soil_layer.Qall
         delta_runoff = [q*u(k, base) for k in range(base)]
-        self.soils[i][1].runoff += delta_runoff
+        soil_layer._runoff += delta_runoff
 
-    def runoff(self, i):
-        return self.soils[i][1].runoff
+    @property
+    def runoff(self):
+        return self.soils[0][1].runoff[0]
+
+    def run_time_step(self, incid_precip, t_max, t_min, pot_et, shp_wtshds, affine=None, stats=['mean']):
+
+        self.snow_pack(incid_precip, t_max, t_min)
+        self.soil_processes(pot_et)
+        self.precipitation_excess(shp_wtshds, affine, stats)
+

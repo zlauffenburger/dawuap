@@ -1,3 +1,8 @@
+from __future__ import print_function
+from __future__ import print_function
+from __future__ import print_function
+from __future__ import print_function
+from __future__ import print_function
 from unittest import TestCase
 
 from .context import hydroengine
@@ -15,7 +20,7 @@ class Test_hbv(TestCase):
 
     @classmethod
     def setup_class(klass):
-        print "setting up class " + klass.__name__
+        print("setting up class " + klass.__name__)
         Test_hbv.args = {
             'image_res': 30,
             'catch_area': 50000,
@@ -38,10 +43,10 @@ class Test_hbv(TestCase):
 
     @classmethod
     def teardown_class(klass):
-        print "TEAR DOWN class " + klass.__name__
+        print("TEAR DOWN class " + klass.__name__)
 
     def setUp(self):
-        print "setting up " + self.__class__.__name__
+        print("setting up " + self.__class__.__name__)
         self.ohbv = hydroengine.HBV(86400, Test_hbv.swe_o, Test_hbv.pond_o, Test_hbv.sm_o, **Test_hbv.args)
 
     def tearDown(self):
@@ -122,7 +127,8 @@ class Test_hbv(TestCase):
         assert(isinstance(self.ohbv.ovlnd_flow, np.ndarray))
 
         self.ohbv.precipitation_excess('test_data/HUC8_NetworkLite.shp', affine)
-        print self.ohbv.soils[0][1].Qall
+        print(self.ohbv.soils[0][1].Qall)
+        print(self.ohbv.runoff)
 
     def test_precipitation_excess_soilfile(self):
         precip = rio.open('test_data/PRCP201301_thematic.tif')
@@ -134,6 +140,8 @@ class Test_hbv(TestCase):
 
         self.ohbv.soils = pickle.load(open('soils.pickled', "rb"))
         self.ohbv.precipitation_excess('test_data/HUC8_NetworkLite.shp', affine)
+        print(self.ohbv.soils[0][1].Qall)
+        print(self.ohbv.runoff)
         # #ro_map = json.dumps(self.ohbv.stw1)
         # geom = self.ohbv.stw1[0]['geometry']
         # geom2 = self.ohbv.stw1[1]['geometry']
