@@ -234,6 +234,18 @@ class HBV(RRmodel):
         delta_runoff = [q*u(k, base) for k in range(base)]
         soil_layer._runoff += delta_runoff
 
+    def pickle_current_states(self):
+
+        # save surface states
+        pickle.dump(self.sm, open("sm.pickled", "wb"))
+        pickle.dump(self.swe, open("swe.pickled", "wb"))
+        pickle.dump(self.pond, open("sm.pickled", "wb"))
+
+        # save soil states
+        pickle.dump(self.soils, open("soils.pickled", "wb"))
+
+
+
     @property
     def runoff(self):
         return self.soils[0][1].runoff[0]
@@ -243,4 +255,6 @@ class HBV(RRmodel):
         self.snow_pack(incid_precip, t_max, t_min)
         self.soil_processes(pot_et)
         self.precipitation_excess(shp_wtshds, affine, stats)
+
+        return self.runoff
 

@@ -163,6 +163,12 @@ class Test_hbv(TestCase):
         self.ohbv.runoff
     """
 
+    def test_pickle_current_states(self):
+        self.fail()
+
+
+
+
 
 
 
