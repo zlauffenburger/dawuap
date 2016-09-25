@@ -239,7 +239,7 @@ class HBV(RRmodel):
         # save surface states
         pickle.dump(self.sm, open("sm.pickled", "wb"))
         pickle.dump(self.swe, open("swe.pickled", "wb"))
-        pickle.dump(self.pond, open("sm.pickled", "wb"))
+        pickle.dump(self.pond, open("pond.pickled", "wb"))
 
         # save soil states
         pickle.dump(self.soils, open("soils.pickled", "wb"))

@@ -1,14 +1,11 @@
 from __future__ import print_function
-from __future__ import print_function
-from __future__ import print_function
-from __future__ import print_function
-from __future__ import print_function
 from unittest import TestCase
 
 from .context import hydroengine
 import numpy as np
 import cPickle as pickle
 import nose
+from nose.tools import assert_equals
 import rasterstats as rst
 import rasterio as rio
 import matplotlib.pyplot as plt
@@ -158,13 +155,18 @@ class Test_hbv(TestCase):
         # ax.axis('scaled')
         # plt.show()
 
-    """
-    def test_runoff(self):
-        self.ohbv.runoff
-    """
+
 
     def test_pickle_current_states(self):
-        self.fail()
+        self.ohbv.pickle_current_states()
+        sm = pickle.load(open("sm.pickled","rb"))
+        swe = pickle.load(open("swe.pickled", "rb"))
+        pond = pickle.load(open("pond.pickled", "rb"))
+        assert_equals(self.ohbv.sm.all(), sm.all())
+        assert_equals(self.ohbv.swe.all(), swe.all())
+        assert_equals(self.ohbv.pond.all(), pond.all())
+
+
 
 
 
