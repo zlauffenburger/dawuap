@@ -18,7 +18,7 @@ class Soil(object):
         self.Qall = qall
 
         self.uh_base = base
-        self._runoff = np.zeros((base))
+        self._runoff = np.zeros(base)
 
 
     @property
@@ -82,7 +82,7 @@ class HBV(RRmodel):
         # self.ck1 = params['mid_layer_conductance']
         # self.ck2 = params['lower_layer_conductance']
 
-        self.soils = soils_o # Soil reinitialization file. Dictionary with geo_json objects
+        self.soils = soils_o  # Soil reinitialization file. Dictionary with geo_json objects
 
         # snow state and flux variables
         self.swe = swe_o
@@ -107,7 +107,8 @@ class HBV(RRmodel):
 
         swe[ind_allswe] = incid_precip[ind_allswe]
         rain[ind_allrain] = incid_precip[ind_allrain]
-        swe[ind_mixed] = (incid_precip * (np.array((self.t_thres - t_min) / (t_max - t_min)).clip(min=0)))[ind_mixed]
+        swe[ind_mixed] = (incid_precip * (np.array((self.t_thres - t_min) /
+                                                   (t_max - t_min).clip(min=0.01)).clip(min=0)))[ind_mixed]
         rain[ind_mixed] = (incid_precip - swe)[ind_mixed]
 
         self.swe += swe
@@ -162,13 +163,15 @@ class HBV(RRmodel):
     def precipitation_excess(self, shp_wtshds, affine=None, stats=['mean']):
 
         # builds a geojson object with required statistics for each catchment
-        stw1 = rst.zonal_stats(shp_wtshds, self.ovlnd_flow, nodata=127, affine=affine, geojson_out=True,
+        print "Calculating zonal statistics for each HRU..."
+        stw1 = rst.zonal_stats(shp_wtshds, self.ovlnd_flow, nodata=None, affine=affine, geojson_out=True,
                                     prefix='runoff_', stats=stats)
 
         soil_layers = {}
         soils = []
 
         for i in range(len(stw1)):
+            print "processing catchment ", i
             if not self.soils: # if there is no dictionary from a previous time step, create a new soil object
                 soil_layers = Soil()
             else:
@@ -231,7 +234,7 @@ class HBV(RRmodel):
 
         base = soil_layer.uh_base
         q = soil_layer.Qall
-        delta_runoff = [q*u(k, base) for k in range(base)]
+        delta_runoff = [q*u(k+1, base) for k in range(base)]
         soil_layer._runoff += delta_runoff
 
     def pickle_current_states(self):
@@ -248,7 +251,7 @@ class HBV(RRmodel):
 
     @property
     def runoff(self):
-        return self.soils[0][1].runoff[0]
+        return [x[1].runoff[0] for x in self.soils]
 
     def run_time_step(self, incid_precip, t_max, t_min, pot_et, shp_wtshds, affine=None, stats=['mean']):
 
