@@ -33,13 +33,15 @@ class routing(object):
         :return: vector of size n with streamflows at time t+1.
         """
 
+        # Add here code to check the stabilitiy of the M-C algorithm
+
         a = np.diag(K*(1-e) + self.dt*0.5)
         b = np.diag(K*e-self.dt*0.5)
         c = np.diag(K*(1-e) - self.dt*0.5)
         d = np.diag(K * e - self.dt * 0.5)
 
-        lhs = (a+np.dot(self.conn,b)).T
-        rhs = np.dot((d+np.dot(self.conn,c)).T,Qt)# + qstuff
+        lhs = (a+np.dot(self.conn, b)).T
+        rhs = np.dot((d+np.dot(self.conn, c)).T, Qt)  # + qstuff
 
         print lhs
         print rhs

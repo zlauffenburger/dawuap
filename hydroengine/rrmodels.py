@@ -75,6 +75,9 @@ class HBV(RRmodel):
         self.beta = params['soil_beta']
         self.lp = params['aet_lp_param']
 
+        # base of the unit hydrograph
+        self.base = params['p_base']
+
         # self.hl1 = params['storage_parameter_1']
         # self.hl2 = params['storage_parameter_2']
         #
@@ -100,6 +103,8 @@ class HBV(RRmodel):
 
         swe = np.zeros_like(self.swe)
         rain = np.zeros_like(self.swe)
+        self.pond = np.zeros_like(self.swe)
+        self.melt = np.zeros_like(self.swe)
 
         ind_allswe = np.less_equal(t_max, self.t_thres)
         ind_allrain = np.greater(t_min, self.t_thres)
@@ -107,8 +112,7 @@ class HBV(RRmodel):
 
         swe[ind_allswe] = incid_precip[ind_allswe]
         rain[ind_allrain] = incid_precip[ind_allrain]
-        swe[ind_mixed] = (incid_precip * (np.array((self.t_thres - t_min) /
-                                                   (t_max - t_min).clip(min=0.01)).clip(min=0)))[ind_mixed]
+        swe[ind_mixed] = (incid_precip * (np.array((self.t_thres - t_min) / (t_max - t_min).clip(min=0.01)).clip(min=0)))[ind_mixed]
         rain[ind_mixed] = (incid_precip - swe)[ind_mixed]
 
         self.swe += swe
@@ -133,8 +137,9 @@ class HBV(RRmodel):
 
     def soil_processes(self, pot_et):
 
+
         # calculate AET
-        self.aet = (pot_et * self.sm/(self.fcap*self.lp)).clip(min=0.0, max=1.0)
+        self.aet = (pot_et.clip(min=0) * (self.sm/(self.fcap*self.lp)).clip(min=0.0, max=1.0))
 
         # For cell where soil moisture is already at capacity, runoff is all the ponded water plus excess water in soil
         ind_sm_geq_fcap = np.greater_equal(self.sm, self.fcap)
@@ -143,7 +148,7 @@ class HBV(RRmodel):
 
         # in all other cells calculate the portion of ponded water that goes into the soil storage
         ind_sm_lt_fcap = np.logical_not(ind_sm_geq_fcap)
-        self.delta_sm[ind_sm_lt_fcap] = (self.pond * (1 - np.power((self.sm/self.fcap), self.beta)))[ind_sm_lt_fcap]
+        self.delta_sm[ind_sm_lt_fcap] = (self.pond * (1 - np.power((self.sm/self.fcap), self.beta).clip(max=1.0, min=0)))[ind_sm_lt_fcap]
         self.sm[ind_sm_lt_fcap] += self.delta_sm[ind_sm_lt_fcap]
         self.ovlnd_flow[ind_sm_lt_fcap] = (self.pond - self.delta_sm)[[ind_sm_lt_fcap]]
 
@@ -163,17 +168,17 @@ class HBV(RRmodel):
     def precipitation_excess(self, shp_wtshds, affine=None, stats=['mean']):
 
         # builds a geojson object with required statistics for each catchment
-        print "Calculating zonal statistics for each HRU..."
-        stw1 = rst.zonal_stats(shp_wtshds, self.ovlnd_flow, nodata=None, affine=affine, geojson_out=True,
+        #print "Calculating zonal statistics for each HRU..."
+        stw1 = rst.zonal_stats(shp_wtshds, self.ovlnd_flow, nodata=-32767, affine=affine, geojson_out=True,
                                     prefix='runoff_', stats=stats)
 
         soil_layers = {}
         soils = []
 
         for i in range(len(stw1)):
-            print "processing catchment ", i
+            #print "processing catchment ", i
             if not self.soils: # if there is no dictionary from a previous time step, create a new soil object
-                soil_layers = Soil()
+                soil_layers = Soil(base=self.base)
             else:
                 soil_layers = self.soils[i][1]
 
@@ -232,10 +237,12 @@ class HBV(RRmodel):
                 - ((p_base - 2 * j + 2) * np.abs(p_base - 2 * j + 2) + (2 * j - p_base) * np.abs(
                     2 * j - p_base) - 4 * p_base) / (2 * p_base ^ 2)).clip(min=0)
 
+        runoff = np.roll(soil_layer._runoff, -1, axis=0)
+        runoff[-1] = 0
         base = soil_layer.uh_base
         q = soil_layer.Qall
         delta_runoff = [q*u(k+1, base) for k in range(base)]
-        soil_layer._runoff += delta_runoff
+        soil_layer._runoff = runoff + delta_runoff
 
     def pickle_current_states(self):
 
