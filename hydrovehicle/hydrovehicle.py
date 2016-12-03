@@ -9,17 +9,17 @@ import rasterio as rio
 import matplotlib.pyplot as plt
 
 
-def geojson_to_graphx(in_geojson):
-    reaches = []
-    with open(in_geojson) as src:
-        feats = json.load(src)
-
-    for edges in feats['features']:
-        reaches.append([tuple(edges['geometry']['coordinates'][0]), tuple(edges['geometry']['coordinates'][-1])])
-
-    return reaches, feats
-
-reaches, feats = geojson_to_graphx('/Users/marcomaneta/Documents/DataSandBox/MontanaHydrology/Network.geojson')
+# def geojson_to_graphx(in_geojson):
+#     reaches = []
+#     with open(in_geojson) as src:
+#         feats = json.load(src)
+#
+#     for edges in feats['features']:
+#         reaches.append([tuple(edges['geometry']['coordinates'][0]), tuple(edges['geometry']['coordinates'][-1])])
+#
+#     return reaches, feats
+#
+# reaches, feats = geojson_to_graphx('/Users/marcomaneta/Documents/DataSandBox/MontanaHydrology/Network.geojson')
 
 def main(argc):
 
@@ -62,19 +62,24 @@ def main(argc):
 
 
     # retrieve adjacency matrix
-    graph = geojson_to_graphx(argc.network_geojson)
+    #graph = geojson_to_graphx(argc.network_geojson)
 
 
 
 
-
+    adj_net = np.array([[0,0,1,0],[1,0,0,1],[0,0,0,0],[0,0,1,0]])
     rr = hyd.HBV(86400, swe, pond, sm, soils, **Test_hbv)
-    # mc = hyd.routing(adj_net, dt)
+    mc = hyd.routing(adj_net, 86400)
 
 
 
 
     ro_ts = []
+    Q_ts = []
+    Q = np.zeros((4))
+    e = np.zeros((4)) + 0.4
+    ks = np.zeros((4)) + 864000
+
 
     for i in np.arange(pp_data.shape[0]):
 
@@ -82,7 +87,10 @@ def main(argc):
         # Calculate potential evapotranspiration
         pet = hyd.hamon_pe((tmin_data[i, :, :]+tmax_data[i, :, :])*0.5, lat, i)
         runoff = rr.run_time_step(pp_data[i, :, :], tmax_data[i, :, :], tmin_data[i, :, :], pet, argc.basin_shp, affine=tmax_affine)
+        Q = mc.muskingum_routing(Q, ks, e, np.insert(runoff, 3, 20))
+        print Q
         ro_ts.append(runoff)
+        Q_ts.append(Q)
 
     #plt.imshow(pet)
     #plt.colorbar()
@@ -95,7 +103,8 @@ def main(argc):
 
     #plt.imshow(np.clip(et, a_min=0, a_max=10000))
     #plt.show()
-    plt.plot(ro_ts)
+    plt.plot(Q_ts)
+    #plt.plot(ro_ts)
     plt.show()
 
 
