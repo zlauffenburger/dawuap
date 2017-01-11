@@ -18,7 +18,7 @@ class routing(object):
         self.dt = dt
         self.n = np.shape(conn)[0]
 
-    def muskingum_routing(self, Qt, K, e, q):
+    def muskingum_routing(self, Qt, K, e, qnew, qold):
         """Routes water through a network graph using the Muskingum-Cunge method.
 
         This function takes an initial distribution of streamflows at noddes
@@ -50,7 +50,8 @@ class routing(object):
 
         # adjust Q and q to the reduced dt
         Qt = Qt/n
-        q = q/n
+        qnew = qnew/n
+        qold = qold/n
 
         # while np.any(np.greater(min_stab, self.dt)):
         #     K = K/2 # assuming K = dx/c
@@ -61,13 +62,13 @@ class routing(object):
 
         for i in range(n):
 
-            a = np.diag(K*(1-e) + dt*0.5)
-            b = np.diag(K*e-dt*0.5)
-            c = np.diag(K*(1-e) - dt*0.5)
-            d = np.diag(K * e - dt * 0.5)
+            a = np.diag(K * (1-e) + dt * 0.5)
+            b = np.diag(K * e - dt * 0.5)
+            c = np.diag(K * (1-e) - dt * 0.5)
+            d = np.diag(K * e + dt * 0.5)
 
             lhs = (a+np.dot(self.conn, b)).T
-            rhs = np.dot((d+np.dot(self.conn, c)).T, Qt) + np.diag(d)*q
+            rhs = np.dot((d+np.dot(self.conn, c)).T, Qt) + np.diag(d)*qold - np.diag(b)*qnew
 
            # print lhs
            # print rhs

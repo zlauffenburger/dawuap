@@ -67,7 +67,7 @@ def main(argc):
 
 
 
-    adj_net = np.array([[0,0,1,0],[1,0,0,1],[0,0,0,0],[0,0,1,0]])
+    adj_net = np.array([[0,0,1],[1,0,0],[0,0,0]])
     rr = hyd.HBV(86400, swe, pond, sm, soils, **Test_hbv)
     mc = hyd.routing(adj_net, 86400)
 
@@ -76,10 +76,10 @@ def main(argc):
 
     ro_ts = []
     Q_ts = []
-    Q = np.zeros((4))
-    e = np.zeros((4)) + 0.4
-    ks = np.zeros((4)) + 864000
-
+    Q = np.zeros((3))
+    qold = np.zeros((3))
+    e = np.zeros((3)) + 0.4
+    ks = np.zeros((3)) + 864000
 
     for i in np.arange(pp_data.shape[0]):
 
@@ -87,8 +87,11 @@ def main(argc):
         # Calculate potential evapotranspiration
         pet = hyd.hamon_pe((tmin_data[i, :, :]+tmax_data[i, :, :])*0.5, lat, i)
         runoff = rr.run_time_step(pp_data[i, :, :], tmax_data[i, :, :], tmin_data[i, :, :], pet, argc.basin_shp, affine=tmax_affine)
-        Q = mc.muskingum_routing(Q, ks, e, np.insert(runoff, 3, 20))
-        print Q
+        runoff[1] = runoff[-1] = 0
+        print "runoff", runoff, np.sum(runoff)
+        Q = mc.muskingum_routing(Q, ks, e, np.array(runoff), qold)
+        qold = np.array(runoff) # np.insert(runoff, 3, 0)
+        print "Q", Q, np.sum(Q)
         ro_ts.append(runoff)
         Q_ts.append(Q)
 
