@@ -49,16 +49,18 @@ def main(argc):
 
     # initiate hydrologic engine using pickled states from previous run
     if argc.restart:
-        swe = pickle.load(open('swe.pickled', 'rb'))
+        #swe = pickle.load(open('swe.pickled', 'rb'))
         swe = np.zeros_like(pp_data[0, :, :])
         pond = pickle.load(open('pond.pickled', 'rb'))
         sm = pickle.load(open('sm.pickled', 'rb'))
         soils = pickle.load(open('soils.pickled', 'rb'))
+        Q = pickle.load(open('streamflows.pickled', 'rb'))
     else:  # initiate hydrologic engine with empty storages
         swe = np.zeros_like(pp_data[0, :, :])
         pond = np.zeros_like(pp_data[0, :, :])
         sm = np.zeros_like(pp_data[0, :, :])
         soils = []
+        Q = np.zeros((3))
 
 
     # retrieve adjacency matrix
@@ -76,7 +78,7 @@ def main(argc):
 
     ro_ts = []
     Q_ts = []
-    Q = np.zeros((3))
+    #Q = np.zeros((3))
     qold = np.zeros((3))
     e = np.zeros((3)) + 0.4
     ks = np.zeros((3)) + 864000
@@ -87,7 +89,7 @@ def main(argc):
         # Calculate potential evapotranspiration
         pet = hyd.hamon_pe((tmin_data[i, :, :]+tmax_data[i, :, :])*0.5, lat, i)
         runoff = rr.run_time_step(pp_data[i, :, :], tmax_data[i, :, :], tmin_data[i, :, :], pet, argc.basin_shp, affine=tmax_affine)
-        runoff[1] = runoff[-1] = 0
+        #runoff[1] = runoff[-1] = 0
         print "runoff", runoff, np.sum(runoff)
         Q = mc.muskingum_routing(Q, ks, e, np.array(runoff), qold)
         qold = np.array(runoff) # np.insert(runoff, 3, 0)
@@ -102,6 +104,8 @@ def main(argc):
 
 
     rr.pickle_current_states()
+    # pickle current streamflows
+    pickle.dump(Q, open("streamflows.pickled", "wb"))
 
 
     #plt.imshow(np.clip(et, a_min=0, a_max=10000))
