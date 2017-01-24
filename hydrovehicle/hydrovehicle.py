@@ -23,14 +23,14 @@ import matplotlib.pyplot as plt
 
 def main(argc):
 
-    Test_hbv = {
-        'pp_temp_thres': 0,
-        'p_base': 5,
-        'ddf': 20,
-        'soil_max_wat': 500.0,
-        'soil_beta': 3,
-        'aet_lp_param': 0.5,
-    }
+    # hbv_pars = {
+    #     'pp_temp_thres': 0,
+    #     'p_base': 5,
+    #     'ddf': 20,
+    #     'soil_max_wat': 500.0,
+    #     'soil_beta': 3,
+    #     'aet_lp_param': 0.5,
+    # }
 
     with rio.open(argc.precip) as pp:
         pp_affine = pp.affine
@@ -44,13 +44,20 @@ def main(argc):
         tmax_affine = tmax.affine
         tmax_data = tmax.read() - 273.15
 
+    hbv_pars = {}
+    with open(argc.params) as json_file:
+        pars = json.load(json_file)
+        for key, value in pars.items():
+            with rio.open(value, 'r') as src:
+                hbv_pars[key] = src.read(1)
+
     # retrieve latitude of cells
     lon, lat = tmax_affine * np.indices(tmin_data[0, :, :].shape)
 
     # initiate hydrologic engine using pickled states from previous run
     if argc.restart:
-        #swe = pickle.load(open('swe.pickled', 'rb'))
-        swe = np.zeros_like(pp_data[0, :, :])
+        swe = pickle.load(open('swe.pickled', 'rb'))
+        # swe = np.zeros_like(pp_data[0, :, :])
         pond = pickle.load(open('pond.pickled', 'rb'))
         sm = pickle.load(open('sm.pickled', 'rb'))
         soils = pickle.load(open('soils.pickled', 'rb'))
@@ -70,7 +77,7 @@ def main(argc):
 
 
     adj_net = np.array([[0,0,1],[1,0,0],[0,0,0]])
-    rr = hyd.HBV(86400, swe, pond, sm, soils, **Test_hbv)
+    rr = hyd.HBV(86400, swe, pond, sm, soils, **hbv_pars)
     mc = hyd.routing(adj_net, 86400)
 
 
@@ -121,6 +128,7 @@ if __name__ == '__main__':
     parser.add_argument('precip',  help='file with daily precipitation')
     parser.add_argument('tmin', help='file with minimum daily temperature')
     parser.add_argument('tmax', help='file with maximum daily temperature')
+    parser.add_argument('params', help='json dictionary with names of parameter files')
 
     parser.add_argument('network_geojson', help='file with network topology in geojson format')
     parser.add_argument('basin_shp', help='shapefile with subcatchments for each node')

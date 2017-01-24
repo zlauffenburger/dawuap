@@ -144,7 +144,7 @@ class HBV(RRmodel):
         # For cell where soil moisture is already at capacity, runoff is all the ponded water plus excess water in soil
         ind_sm_geq_fcap = np.greater_equal(self.sm, self.fcap)
         self.ovlnd_flow[ind_sm_geq_fcap] = self.pond[ind_sm_geq_fcap] + (self.sm - self.fcap)[ind_sm_geq_fcap]
-        self.sm[ind_sm_geq_fcap] = self.fcap
+        self.sm[ind_sm_geq_fcap] = self.fcap[ind_sm_geq_fcap]
 
         # in all other cells calculate the portion of ponded water that goes into the soil storage
         ind_sm_lt_fcap = np.logical_not(ind_sm_geq_fcap)
@@ -155,7 +155,7 @@ class HBV(RRmodel):
         # Check if cell exceed storage capacity after adding delta_sm
         ind_sm_geq_fcap = np.greater_equal(self.sm, self.fcap)
         self.ovlnd_flow[ind_sm_geq_fcap] += (self.sm - self.fcap)[ind_sm_geq_fcap]
-        self.sm[ind_sm_geq_fcap] = self.fcap
+        self.sm[ind_sm_geq_fcap] = self.fcap[ind_sm_geq_fcap]
 
         # if there is sufficient soil moisture to satisfy aet, reduce sm
         ind_sm_gt_aet = np.greater(self.sm, self.aet)

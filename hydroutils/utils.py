@@ -1,7 +1,38 @@
 from __future__ import division
 import numpy as np
 import shapefile as shp
+import rasterio as rio
+import pickle
 
+
+def write_array_as_tiff(fn, template, array):
+    """
+    Utility ot write numpy arrays as tiff file using metadata from a template map
+    :param fn: filename of output tiff file, string
+    :param template: filename of valid image to obtain metadata for output image
+    :param array: numpy array to be converted to tiff
+    :return: None
+    """
+    with rio.open(template, 'r') as src:
+        profile = src.profile
+        if not isinstance(array, np.ndarray) or array.shape != src.shape:
+            raise ValueError("Shape mismatch!. Template shape is %s. Arrays shape is %s" % (src.shape, array.shape))
+        profile.update(driver='GTiff', count=1, dtype='float64')
+        with rio.open(fn, 'w', **profile) as dst:
+            dst.write(array.astype('float64'), 1)
+
+
+def write_structured_parameter_array(filenames, shape):
+    tp = zip(filenames.keys(), ['float32' for i in range(len(filenames))], [shape for i in range(len(filenames))])
+    pars = np.empty(len(filenames), dtype=tp)
+
+    for name, items in filenames.items():
+        with rio.open(items, 'r') as src:
+            pars[name] = src.read()
+
+
+
+    #np.zeros(filenames.items(), dtype=[('', '', )])
 
 def add_rr_model_parameters_to_shapefile(shapefile):
     r = shp.Reader(shapefile)
@@ -38,5 +69,5 @@ def add_rr_model_parameters_to_shapefile(shapefile):
 
     w.save('/Users/marcomaneta/Documents/DataSandBox/MontanaHydrology/test')
 
-add_rr_model_parameters_to_shapefile('/Users/marcomaneta/Documents/workspace/linknodemodel/tests/test_data/HUC8_NetworkLite.shp')
+#add_rr_model_parameters_to_shapefile('test_data/HUC8_NetworkLite.shp')
 
