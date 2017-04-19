@@ -76,7 +76,7 @@ class HBV(RRmodel):
         self.lp = params['aet_lp_param']
 
         # base of the unit hydrograph
-        self.base = params['p_base']
+        #self.base = params['p_base']
 
         # self.hl1 = params['storage_parameter_1']
         # self.hl2 = params['storage_parameter_2']
@@ -177,12 +177,14 @@ class HBV(RRmodel):
 
         for i in range(len(stw1)):
             #print "processing catchment ", i
+            props = stw1[i]['properties']
+
             if not self.soils: # if there is no dictionary from a previous time step, create a new soil object
-                soil_layers = Soil(base=self.base)
+                soil_layers = Soil(base=props['hbv_pbase'])
             else:
                 soil_layers = self.soils[i][1]
 
-            props = stw1[i]['properties']
+            #props = stw1[i]['properties']
 
             # conversion stuff
             hbv_ck0 = self.dt / props['hbv_ck0'] / 86400

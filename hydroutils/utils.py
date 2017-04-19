@@ -34,25 +34,29 @@ def write_structured_parameter_array(filenames, shape):
 
     #np.zeros(filenames.items(), dtype=[('', '', )])
 
-def add_rr_model_parameters_to_shapefile(shapefile):
+def add_rr_model_parameters_to_shapefile(shapefile, outshp=''):
     r = shp.Reader(shapefile)
     w = shp.Writer(r.shapeType)
-    w.autoBalance = 1
+    #w.autoBalance = 1
 
     w.fields = list(r.fields)
     #w.records.extend(r.records())
     w._shapes.extend(r.shapes())
 
-    if 'hbv_ck0' not in w.fields:
+    fldnames = [fld[0] for fld in w.fields]
+
+    if 'hbv_ck0' not in fldnames:
         w.field('hbv_ck0', 'N', 10, 6)
-    if 'hbv_ck1' not in w.fields:
+    if 'hbv_ck1' not in fldnames:
         w.field('hbv_ck1', 'N', 10, 6)
-    if 'hbv_ck3' not in w.fields:
+    if 'hbv_ck2' not in fldnames:
         w.field('hbv_ck2', 'N', 10, 6)
-    if 'hbv_hl1' not in w.fields:
+    if 'hbv_hl1' not in fldnames:
         w.field('hbv_hl1', 'N', 10, 6)
-    if 'hbv_perc' not in w.fields:
+    if 'hbv_perc' not in fldnames:
         w.field('hbv_perc', 'N', 10, 6)
+    if 'hbv_pbase' not in fldnames:
+        w.field('hbv_pbase', 'N', 10, 0)
 
     counter = 1
     for ca in r.records():
@@ -62,12 +66,16 @@ def add_rr_model_parameters_to_shapefile(shapefile):
         ca.append(10000.0)
         ca.append(50.0)
         ca.append(50.0)
+        ca.append(5)
         w.records.append(ca)
         counter += 1
 
     #w.records.append(('hbv_ck0', '1.0'))
+    if not outshp:
+        outshp=shapefile
 
-    w.save('/Users/marcomaneta/Documents/DataSandBox/MontanaHydrology/test')
+    w.save(outshp)
+    r = w = None
 
 #add_rr_model_parameters_to_shapefile('test_data/HUC8_NetworkLite.shp')
 
