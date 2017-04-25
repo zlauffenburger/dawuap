@@ -34,8 +34,8 @@ class TestUtils(TestCase):
     def test_write_array_as_tiff(self):
         utils.write_array_as_tiff('test_data/aet_lp_param.tif', 'test_data/precip.nc', np.ones((131, 301))*0.5)
 
-    def test_add_rr_model_parameters_to_shapefile(self):
-        utils.add_rr_model_parameters_to_shapefile('test_data/HUC8_NetworkLiteLatLon.shp')
+   # def test_add_rr_model_parameters_to_shapefile(self):
+   #     utils.add_rr_model_parameters_to_shapefile('test_data/HUC8_NetworkLiteLatLon.shp')
 
     def test_add_rr_model_parameters_to_shapefile2(self):
         utils.add_rr_model_parameters_to_shapefile('test_data/HUC8_NetworkLiteLatLon.shp', 'test_data/test')

@@ -35,9 +35,21 @@ def write_structured_parameter_array(filenames, shape):
     #np.zeros(filenames.items(), dtype=[('', '', )])
 
 def add_rr_model_parameters_to_shapefile(shapefile, outshp=''):
+    """
+    Add default field and parameter values to shapefile. A bug in the pyShp library 
+    handles incorrectly Date fields. If date fields are contained in the shapefile 
+    the library needs to be patched including the follwing lines in shapefile.py:
+
+    from datetime import date
+    comment out line 525 and replace by:
+     value = date(y,m,d).strftime('%Y%m%d')
+    :param shapefile: Polygon (catchment) shapefile to which parameter fields will be added
+    :param outshp: optional, output shapefile filename. Overwrite original if empy 
+    :return: None 
+    """
     r = shp.Reader(shapefile)
     w = shp.Writer(r.shapeType)
-    #w.autoBalance = 1
+    w.autoBalance = 1
 
     w.fields = list(r.fields)
     #w.records.extend(r.records())
