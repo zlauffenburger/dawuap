@@ -1,6 +1,45 @@
 from __future__ import division
 import numpy as np
 import shapefile as shp
+import fiona
+from shapely.geometry import shape
+
+
+class ParseNetwork(object):
+
+    def __init__(self, fn_vector):
+        self.fn_vector = fn_vector
+
+
+    def _read_features(self):
+        # test it as fiona data source
+        features_iter = None
+        try:
+            with fiona.open(self.fn_vector, 'r') as src:
+                assert len(src) > 0
+
+            def fiona_generator(obj):
+                with fiona.open(obj, 'r') as src:
+                    for feature in src:
+                        yield feature
+
+            features_iter = fiona_generator(self.fn_vector)
+
+        except (AssertionError, TypeError, IOError, OSError):
+            print "fn_vector does not point to a fiona object, error ", e
+
+        return features_iter
+
+    def parse_network(self):
+        feature_iter = self._read_features()
+
+        for i, feats in enumerate(feature_iter):
+            geom = shape(feats['geometry'])
+            props = shape(feats['properties'])
+
+
+a = ParseNetwork('test_data/mt_network.geojson')
+a.parse_network()
 
 
 def add_rr_model_parameters_to_shapefile(shapefile):

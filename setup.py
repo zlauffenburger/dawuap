@@ -10,8 +10,8 @@ config = {
         'download_url': 'http://www.',
         'author_email': 'marco.maneta@umontana.edu',
         'version': '0.1',
-        'install_requires': ['numpy', 'nose', 'rasterstats', 'rasterio'],
-        'packages': ['hydroengine'],
+        'install_requires': ['numpy', 'nose', 'rasterstats', 'rasterio', 'fiona', 'shapely'],
+        'packages': ['hydroengine', 'utils', 'hydrovehicle'],
         'scripts': [],
         'name': 'daWUAP'
 }
