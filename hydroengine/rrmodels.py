@@ -76,7 +76,7 @@ class HBV(RRmodel):
         self.lp = params['aet_lp_param']
 
         # base of the unit hydrograph
-        self.base = params['p_base']
+        #self.base = params['p_base']
 
         # self.hl1 = params['storage_parameter_1']
         # self.hl2 = params['storage_parameter_2']
@@ -144,7 +144,7 @@ class HBV(RRmodel):
         # For cell where soil moisture is already at capacity, runoff is all the ponded water plus excess water in soil
         ind_sm_geq_fcap = np.greater_equal(self.sm, self.fcap)
         self.ovlnd_flow[ind_sm_geq_fcap] = self.pond[ind_sm_geq_fcap] + (self.sm - self.fcap)[ind_sm_geq_fcap]
-        self.sm[ind_sm_geq_fcap] = self.fcap
+        self.sm[ind_sm_geq_fcap] = self.fcap[ind_sm_geq_fcap]
 
         # in all other cells calculate the portion of ponded water that goes into the soil storage
         ind_sm_lt_fcap = np.logical_not(ind_sm_geq_fcap)
@@ -155,7 +155,7 @@ class HBV(RRmodel):
         # Check if cell exceed storage capacity after adding delta_sm
         ind_sm_geq_fcap = np.greater_equal(self.sm, self.fcap)
         self.ovlnd_flow[ind_sm_geq_fcap] += (self.sm - self.fcap)[ind_sm_geq_fcap]
-        self.sm[ind_sm_geq_fcap] = self.fcap
+        self.sm[ind_sm_geq_fcap] = self.fcap[ind_sm_geq_fcap]
 
         # if there is sufficient soil moisture to satisfy aet, reduce sm
         ind_sm_gt_aet = np.greater(self.sm, self.aet)
@@ -177,12 +177,14 @@ class HBV(RRmodel):
 
         for i in range(len(stw1)):
             #print "processing catchment ", i
+            props = stw1[i]['properties']
+
             if not self.soils: # if there is no dictionary from a previous time step, create a new soil object
-                soil_layers = Soil(base=self.base)
+                soil_layers = Soil(base=props['hbv_pbase'])
             else:
                 soil_layers = self.soils[i][1]
 
-            props = stw1[i]['properties']
+            #props = stw1[i]['properties']
 
             # conversion stuff
             hbv_ck0 = self.dt / props['hbv_ck0'] / 86400

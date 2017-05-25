@@ -68,7 +68,7 @@ class routing(object):
             d = np.diag(K * e + dt * 0.5)
 
             lhs = (a+np.dot(self.conn, b)).T
-            rhs = np.dot((d+np.dot(self.conn, c)).T, Qt) + np.diag(d)*qold - np.diag(b)*qnew
+            rhs = np.dot((d+np.dot(self.conn, c)).T, Qt) + np.diag(a)*qnew#+ np.diag(d)*qold - np.diag(b)*qnew
 
            # print lhs
            # print rhs
