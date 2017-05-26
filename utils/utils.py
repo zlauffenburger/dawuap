@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+import pandas as pd
 import shapefile as shp
 import fiona
 from shapely.geometry import shape
@@ -10,7 +11,7 @@ class ParseNetwork(object):
 
     def __init__(self, fn_vector):
         self.fn_vector = fn_vector
-
+        self.conn_matrix = self.calc_connectivity_matrix()
 
     def _read_features(self):
         # test it as fiona data source
@@ -27,20 +28,27 @@ class ParseNetwork(object):
             features_iter = fiona_generator(self.fn_vector)
 
         except (AssertionError, TypeError, IOError, OSError):
-            print "fn_vector does not point to a fiona object, error ", e
+            print "fn_vector does not point to a fiona object, error "
 
         return features_iter
 
-    def parse_network(self):
+    def calc_connectivity_matrix(self):
         feature_iter = self._read_features()
+
+        lst_node_connections = []
 
         for i, feats in enumerate(feature_iter):
             geom = shape(feats['geometry'])
-            props = shape(feats['properties'])
+            props = feats['properties']
+            lst_node_connections.append((props["FROM_NODE"], props["TO_NODE"]))
 
-
-a = ParseNetwork('test_data/mt_network.geojson')
-a.parse_network()
+        lstNodes = set(zip(*lst_node_connections)[0])
+        df = pd.DataFrame(0, index=lstNodes, columns=lstNodes)
+        # drop the connections that go out of the basin to node 0
+        lst_node_connections = [i for i in lst_node_connections if i[1]>0]
+        for link in lst_node_connections:
+            df.loc[link] = 1
+        return df
 
 
 def write_array_as_tiff(fn, template, array):

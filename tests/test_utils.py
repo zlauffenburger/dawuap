@@ -1,18 +1,19 @@
 from __future__ import print_function
 from unittest import TestCase
 import numpy as np
-from hydroutils import utils
+from context import utils
 
 
 
-class TestParseNetwork(object):
+class TestParseNetwork(TestCase):
 
     @classmethod
-    def setup_class(klass):
+    def setup_class(cls):
         print "SETUP!"
 
     @classmethod
-    def teardown_class(klass):
+    def teardown_class(cls):
+        a = utils.parse_network('test_data/mt_network.geojson')
         print "TEAR DOWN!"
 
     def setup(self):
@@ -22,7 +23,6 @@ class TestParseNetwork(object):
         pass
 
     def test_init(self):
-        a = utils.parse_network('test_data/mt_network.geojson')
         nose.tools.assert_equal('test_data/mt_network.geojson', a.fn_vector)
 
     def test_parse_network(self):
