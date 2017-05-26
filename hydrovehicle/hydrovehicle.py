@@ -10,15 +10,15 @@ import rasterio as rio
 import matplotlib.pyplot as plt
 
 
-def shp_to_graphx(in_shape):
-    with open(in_shape) as src:
-        shpfile = nx.read_shp(in_shape, simplify=True)
-    net = nx.adjacency_matrix(shpfile)
-    return net.todense()
+# def shp_to_graphx(in_shape):
+#     with open(in_shape) as src:
+#         shpfile = nx.read_shp(in_shape, simplify=True)
+#     net = nx.adjacency_matrix(shpfile)
+#     return net.todense()
 
 
 # reaches, feats = geojson_to_graphx('/Users/marcomaneta/Documents/DataSandBox/MontanaHydrology/Network.geojson')
-print(shp_to_graphx('tests/test_data/NetworkLite.shp'))
+#print(shp_to_graphx('tests/test_data/NetworkLite.shp'))
 
 
 # def geojson_to_graphx(in_geojson):
@@ -104,7 +104,7 @@ def main(argc):
         runoff = rr.run_time_step(pp_data[i, :, :], tmax_data[i, :, :], tmin_data[i, :, :], pet, argc.basin_shp,
                                   affine=tmax_affine)
         # runoff[1] = runoff[-1] = 0
-        print "runoff", runoff, np.sum(runoff)
+        print "runoff ", runoff, np.sum(runoff)
         Q = mc.muskingum_routing(Q, ks, e, np.array(runoff), qold)
         qold = np.array(runoff)  # np.insert(runoff, 3, 0)
         print "Q", Q, np.sum(Q)

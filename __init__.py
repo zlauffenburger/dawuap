@@ -1,1 +1,1 @@
-__all__ = ["hydroengine", "utils", "hydrovehicle"]
+__all__ = ["hydroengine", "utils", "hydrovehicle", "tests"]

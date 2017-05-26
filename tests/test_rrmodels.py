@@ -1,24 +1,20 @@
 from __future__ import print_function
-from unittest import TestCase
-
-from .context import hydroengine
+from context import hydroengine
 import numpy as np
 import cPickle as pickle
 import nose
-from nose.tools import assert_equals
 import rasterstats as rst
 import rasterio as rio
 import matplotlib.pyplot as plt
 import json
-from descartes import PolygonPatch
 
 
-class Test_hbv(TestCase):
+class TestHBV(object):
 
     @classmethod
-    def setup_class(klass):
-        print("setting up class " + klass.__name__)
-        Test_hbv.args = {
+    def setup_class(cls):
+        print("setting up class " + cls.__name__)
+        cls.args = {
             'image_res': 30,
             'catch_area': 50000,
             'pp_temp_thres': 2,
@@ -33,9 +29,9 @@ class Test_hbv(TestCase):
             'mid_layer_conductance': 50,
             'lower_layer_conductance': 50,
         }
-        Test_hbv.swe_o = np.zeros((20, 30))
-        Test_hbv.pond_o = np.zeros_like(Test_hbv.swe_o)
-        Test_hbv.sm_o = np.zeros_like(Test_hbv.swe_o)
+        cls.swe_o = np.zeros((20, 30))
+        cls.pond_o = np.zeros_like(TestHBV.swe_o)
+        cls.sm_o = np.zeros_like(TestHBV.swe_o)
 
 
     @classmethod
@@ -44,73 +40,73 @@ class Test_hbv(TestCase):
 
     def setUp(self):
         print("setting up " + self.__class__.__name__)
-        self.ohbv = hydroengine.HBV(86400, Test_hbv.swe_o, Test_hbv.pond_o, Test_hbv.sm_o, **Test_hbv.args)
+        TestHBV.ohbv = hydroengine.HBV(86400, TestHBV.swe_o, TestHBV.pond_o, TestHBV.sm_o, **TestHBV.args)
 
     def tearDown(self):
-        Test_hbv.swe_o = np.zeros((20, 30))
-        Test_hbv.pond_o = np.zeros_like(Test_hbv.swe_o)
+        TestHBV.swe_o = np.zeros((20, 30))
+        TestHBV.pond_o = np.zeros_like(TestHBV.swe_o)
 
     #@with_setup(setup, teardown)
     def TestInitialization(self):
-        np.testing.assert_array_equal(Test_hbv.swe_o, self.ohbv.swe)
+        np.testing.assert_array_equal(TestHBV.swe_o, self.ohbv.swe)
         nose.tools.assert_equals(self.ohbv.t_thres, 2)
         nose.tools.assert_equals(self.ohbv.ddf, 0.02)
 
     #@with_setup(setup, teardown)
     def test_snowpack_allswe(self):
         # All rain becomes swe
-        precip = np.ones_like(Test_hbv.swe_o) * 0.03
-        t_max = np.ones_like(Test_hbv.swe_o) * -3
-        t_min = np.ones_like(Test_hbv.swe_o) * -4
+        precip = np.ones_like(TestHBV.swe_o) * 0.03
+        t_max = np.ones_like(TestHBV.swe_o) * -3
+        t_min = np.ones_like(TestHBV.swe_o) * -4
         self.ohbv.snow_pack(precip, t_max, t_min)
-        np.testing.assert_array_equal(self.ohbv.swe, np.ones_like(Test_hbv.swe_o)*0.03, 'swe')
-        np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(Test_hbv.swe_o) * 0.0, 'pond')
+        np.testing.assert_array_equal(self.ohbv.swe, np.ones_like(TestHBV.swe_o)*0.03, 'swe')
+        np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(TestHBV.swe_o) * 0.0, 'pond')
 
     #@with_setup(setup, teardown)
     def test_snowpack_allrain(self):
         # All rain becomes ponded water
-        precip = np.ones_like(Test_hbv.swe_o) * 0.03
-        t_max = np.ones_like(Test_hbv.swe_o) * 5
-        t_min = np.ones_like(Test_hbv.swe_o) * 3
+        precip = np.ones_like(TestHBV.swe_o) * 0.03
+        t_max = np.ones_like(TestHBV.swe_o) * 5
+        t_min = np.ones_like(TestHBV.swe_o) * 3
         self.ohbv.snow_pack(precip, t_max, t_min)
-        np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(Test_hbv.swe_o) * 0.03)
+        np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(TestHBV.swe_o) * 0.03)
 
     #@with_setup(setup, teardown)
     def test_snowpack_mixed(self):
         # 50/50 rain and snow
-        precip = np.ones_like(Test_hbv.swe_o) * 0.03
-        t_max = np.ones_like(Test_hbv.swe_o) * 3
-        t_min = np.ones_like(Test_hbv.swe_o) * 1
+        precip = np.ones_like(TestHBV.swe_o) * 0.03
+        t_max = np.ones_like(TestHBV.swe_o) * 3
+        t_min = np.ones_like(TestHBV.swe_o) * 1
         self.ohbv.snow_pack(precip, t_max, t_min)
-        np.testing.assert_array_equal(self.ohbv.swe, np.ones_like(Test_hbv.swe_o)*0.03/2, 'equal swe', verbose=True)
-        np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(Test_hbv.swe_o) * 0.03/2, 'equal rain', verbose=True)
+        np.testing.assert_array_equal(self.ohbv.swe, np.ones_like(TestHBV.swe_o)*0.03/2, 'equal swe', verbose=True)
+        np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(TestHBV.swe_o) * 0.03/2, 'equal rain', verbose=True)
 
     def test_snowpack_allmelts(self):
         # 50/50 rain and snow but ridiculous melt coefficient to melt all snowpack
-        precip = np.ones_like(Test_hbv.swe_o) * 0.03
-        t_max = np.ones_like(Test_hbv.swe_o) * 4
-        t_min = np.ones_like(Test_hbv.swe_o) * 1
+        precip = np.ones_like(TestHBV.swe_o) * 0.03
+        t_max = np.ones_like(TestHBV.swe_o) * 4
+        t_min = np.ones_like(TestHBV.swe_o) * 1
         self.ohbv.ddf= 100
         self.ohbv.snow_pack(precip, t_max, t_min)
-        np.testing.assert_array_equal(self.ohbv.swe, np.ones_like(Test_hbv.swe_o) * 0.0, 'zero swe', verbose=True)
-        np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(Test_hbv.swe_o) * 0.03, 'all rain', verbose=True)
+        np.testing.assert_array_equal(self.ohbv.swe, np.ones_like(TestHBV.swe_o) * 0.0, 'zero swe', verbose=True)
+        np.testing.assert_array_equal(self.ohbv.pond, np.ones_like(TestHBV.swe_o) * 0.03, 'all rain', verbose=True)
 
     # Tests for soil_processes module
     def test_soil_processes_allrunsoff(self):
-        self.ohbv.sm = np.zeros_like(Test_hbv.swe_o)+50.0
-        precip = np.ones_like(Test_hbv.swe_o) * 0.03
-        pet = np.ones_like(Test_hbv.swe_o) * 0.0
+        self.ohbv.sm = np.zeros_like(TestHBV.swe_o)+50.0
+        precip = np.ones_like(TestHBV.swe_o) * 0.03
+        pet = np.ones_like(TestHBV.swe_o) * 0.0
         self.ohbv.pond = precip
         self.ohbv.soil_processes(pet)
         np.testing.assert_array_equal(self.ohbv.ovlnd_flow, precip, 'all rain', verbose=True)
 
     def test_soil_processes_allinfiltrates(self):
-        self.ohbv.sm = np.zeros_like(Test_hbv.swe_o) + 0.0
-        precip = np.ones_like(Test_hbv.swe_o) * 0.03
-        pet = np.ones_like(Test_hbv.swe_o) * 0.0
+        self.ohbv.sm = np.zeros_like(TestHBV.swe_o) + 0.0
+        precip = np.ones_like(TestHBV.swe_o) * 0.03
+        pet = np.ones_like(TestHBV.swe_o) * 0.0
         self.ohbv.pond = precip
         self.ohbv.soil_processes(pet)
-        np.testing.assert_array_equal(self.ohbv.ovlnd_flow, np.zeros_like(Test_hbv.swe_o), 'all rain runs off', verbose=True)
+        np.testing.assert_array_equal(self.ohbv.ovlnd_flow, np.zeros_like(TestHBV.swe_o), 'all rain runs off', verbose=True)
         np.testing.assert_array_equal(self.ohbv.sm, precip, 'all rain infiltrates', verbose=True)
 
 
@@ -162,9 +158,9 @@ class Test_hbv(TestCase):
         sm = pickle.load(open("sm.pickled","rb"))
         swe = pickle.load(open("swe.pickled", "rb"))
         pond = pickle.load(open("pond.pickled", "rb"))
-        assert_equals(self.ohbv.sm.all(), sm.all())
-        assert_equals(self.ohbv.swe.all(), swe.all())
-        assert_equals(self.ohbv.pond.all(), pond.all())
+        nose.tools.assert_equals(self.ohbv.sm.all(), sm.all())
+        nose.tools.assert_equals(self.ohbv.swe.all(), swe.all())
+        nose.tools.assert_equals(self.ohbv.pond.all(), pond.all())
 
 
 

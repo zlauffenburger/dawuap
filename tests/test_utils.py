@@ -1,31 +1,36 @@
 from __future__ import print_function
-from unittest import TestCase
 import numpy as np
 from context import utils
+import nose
 
 
-
-class TestParseNetwork(TestCase):
+class TestParseNetwork(object):
 
     @classmethod
     def setup_class(cls):
-        print "SETUP!"
+        print("setting up class " + cls.__name__)
+
 
     @classmethod
     def teardown_class(cls):
-        a = utils.parse_network('test_data/mt_network.geojson')
-        print "TEAR DOWN!"
+        print ("tearing down class " + cls.__name__)
 
     def setup(self):
-        pass
+        self.network_geojson = '../tests/test_data/mt_network.geojson'
+        self.network_shp = '../tests/test_data/mt_network.shp'
 
     def teardown(self):
         pass
 
-    def test_init(self):
-        nose.tools.assert_equal('test_data/mt_network.geojson', a.fn_vector)
+    def test_init_geojson(self):
+        a = utils.ParseNetwork(self.network_geojson)
+        nose.tools.assert_equal(a.fn_vector, self.network_geojson)
 
-    def test_parse_network(self):
+    def test_init_shp(self):
+        a = utils.ParseNetwork(self.network_shp)
+        nose.tools.assert_equal(a.fn_vector, self.network_shp)
+
+    def test_calc_connectivity_matrix(self):
         pass
 
 
@@ -40,7 +45,7 @@ class TestParseNetwork(TestCase):
 # }
 
 
-class TestUtils(TestCase):
+class TestUtils(object):
     def test_write_structured_parameter_array(self):
         import json
         filenamedic = {
