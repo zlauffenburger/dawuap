@@ -20,7 +20,7 @@ class TestHBV(object):
             'pp_temp_thres': 2,
             'p_base': 10,
             'ddf': 0.02,
-            'soil_max_wat': 50.0,
+            'soil_max_wat': np.ones((20, 30))*50.0,
             'soil_beta': 0.5,
             'aet_lp_param': 0.5,
             'storage_parameter_1': 50,

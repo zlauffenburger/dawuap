@@ -48,12 +48,13 @@ class ParseNetwork(object):
         lst_node_connections = [i for i in lst_node_connections if i[1]>0]
         for link in lst_node_connections:
             df.loc[link] = 1
+
         return df
 
 
 def write_array_as_tiff(fn, template, array):
     """
-    Utility ot write numpy arrays as tiff file using metadata from a template map
+    Utility to write numpy arrays as tiff file using metadata from a template map
     :param fn: filename of output tiff file, string
     :param template: filename of valid image to obtain metadata for output image
     :param array: numpy array to be converted to tiff

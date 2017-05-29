@@ -56,7 +56,7 @@ class TestRouting(object):
         e = np.ones_like(K)*0.42
         Qk = np.ones_like(K)*0.2
         #a.muskingum_routing(Qk,K,e, 0)
-        Qk1 = a.muskingum_routing(Qk, K, e, 0)
+        Qk1 = a.muskingum_routing(Qk, K, e, 0, 0)
         print Qk1
 
 

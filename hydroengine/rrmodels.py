@@ -165,11 +165,12 @@ class HBV(RRmodel):
         self.aet[ind_sm_leq_aet] = self.sm[ind_sm_leq_aet]
         self.sm[ind_sm_leq_aet] = 0.0
 
-    def precipitation_excess(self, shp_wtshds, affine=None, stats=['mean']):
+    def precipitation_excess(self, shp_wtshds, affine=None, stats=['mean'], **kwargs):
 
         # builds a geojson object with required statistics for each catchment
         #print "Calculating zonal statistics for each HRU..."
-        stw1 = rst.zonal_stats(shp_wtshds, self.ovlnd_flow, nodata=-32767, affine=affine, geojson_out=True,
+        nodata = kwargs['nodata'] if kwargs.has_key('nodata') else -32767
+        stw1 = rst.zonal_stats(shp_wtshds, self.ovlnd_flow, nodata=nodata, affine=affine, geojson_out=True,
                                     prefix='runoff_', stats=stats)
 
         soil_layers = {}
@@ -262,11 +263,11 @@ class HBV(RRmodel):
     def runoff(self):
         return [x[1].runoff[0] for x in self.soils]
 
-    def run_time_step(self, incid_precip, t_max, t_min, pot_et, shp_wtshds, affine=None, stats=['mean']):
+    def run_time_step(self, incid_precip, t_max, t_min, pot_et, shp_wtshds, affine=None, stats=['mean'], **kwargs):
 
         self.snow_pack(incid_precip, t_max, t_min)
         self.soil_processes(pot_et)
-        self.precipitation_excess(shp_wtshds, affine, stats)
+        self.precipitation_excess(shp_wtshds, affine, stats, **kwargs)
 
         return self.runoff
 

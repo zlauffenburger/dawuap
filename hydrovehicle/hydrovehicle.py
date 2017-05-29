@@ -1,60 +1,35 @@
-from __future__ import print_function
+#from __future__ import print_function
 from __future__ import division
 import argparse
+import utils
 import pickle
 import json
-import networkx as nx
 import numpy as np
 import hydroengine as hyd
 import rasterio as rio
 import matplotlib.pyplot as plt
 
 
-# def shp_to_graphx(in_shape):
-#     with open(in_shape) as src:
-#         shpfile = nx.read_shp(in_shape, simplify=True)
-#     net = nx.adjacency_matrix(shpfile)
-#     return net.todense()
-
-
-# reaches, feats = geojson_to_graphx('/Users/marcomaneta/Documents/DataSandBox/MontanaHydrology/Network.geojson')
-#print(shp_to_graphx('tests/test_data/NetworkLite.shp'))
-
-
-# def geojson_to_graphx(in_geojson):
-#     reaches = []
-#     with open(in_geojson) as src:
-#         feats = json.load(src)
-#
-#     for edges in feats['features']:
-#         reaches.append([tuple(edges['geometry']['coordinates'][0]), tuple(edges['geometry']['coordinates'][-1])])
-#
-#     return reaches, feats
-#
-# reaches, feats = geojson_to_graphx('/Users/marcomaneta/Documents/DataSandBox/MontanaHydrology/Network.geojson')
 
 def main(argc):
-    # hbv_pars = {
-    #     'pp_temp_thres': 0,
-    #     'p_base': 5,
-    #     'ddf': 20,
-    #     'soil_max_wat': 500.0,
-    #     'soil_beta': 3,
-    #     'aet_lp_param': 0.5,
-    # }
+
 
     with rio.open(argc.precip) as pp:
         pp_affine = pp.affine
+        pp_nodata = int(pp.nodata)
         pp_data = (pp.read()).clip(min=0)
 
     with rio.open(argc.tmin) as tmin:
         tmin_affine = tmin.affine
-        tmin_data = tmin.read() - 273.15
+        tmin_nodata = int(tmin.nodata)
+        tmin_data = tmin.read()
+        tmin_data[tmin_data != tmin_nodata] -= 273.15
 
     with rio.open(argc.tmax) as tmax:
         tmax_affine = tmax.affine
-        tmax_data = tmax.read() - 273.15
-
+        tmax_nodata = int(tmax.nodata)
+        tmax_data = tmax.read()
+        tmax_data[tmax_data != tmax_nodata] -= 273.15
     hbv_pars = {}
     with open(argc.params) as json_file:
         pars = json.load(json_file)
@@ -78,31 +53,31 @@ def main(argc):
         pond = np.zeros_like(pp_data[0, :, :])
         sm = np.zeros_like(pp_data[0, :, :])
         soils = []
-        Q = np.zeros((3))  # Num 3 is not magic, it zeros the three soil layers
+        Q = np.zeros((3))  # Num 3 is not magic, it initializes to zero the three soil layers
 
     # retrieve adjacency matrix
-    # graph = geojson_to_graphx(argc.network_geojson)
+    graph = utils.ParseNetwork(argc.network_file)
+    adj_net = graph.conn_matrix
 
-
-
-
-    adj_net = np.array([[0, 0, 1], [1, 0, 0], [0, 0, 0]])
+    #adj_net = np.array([[0, 0, 1], [1, 0, 0], [0, 0, 0]])
     rr = hyd.HBV(86400, swe, pond, sm, soils, **hbv_pars)
     mc = hyd.routing(adj_net, 86400)
+
+    num_links = len(adj_net.index)
 
     ro_ts = []
     Q_ts = []
     # Q = np.zeros((3))
-    qold = np.zeros((3))  # Num 3 is not magic, it zeros the three soil layers
-    e = np.zeros((3)) + 0.4  # TODO: 0.4 seems a magic number
-    ks = np.zeros((3)) + 864000  # secs to day
+    qold = np.zeros((num_links))
+    e = np.zeros((num_links)) + 0.4  # TODO: 0.4 seems a magic number
+    ks = np.zeros((num_links)) + 864000  # secs to day
 
     for i in np.arange(pp_data.shape[0]):
         print "Calcuating time step ", i + 1
         # Calculate potential evapotranspiration
         pet = hyd.hamon_pe((tmin_data[i, :, :] + tmax_data[i, :, :]) * 0.5, lat, i)
         runoff = rr.run_time_step(pp_data[i, :, :], tmax_data[i, :, :], tmin_data[i, :, :], pet, argc.basin_shp,
-                                  affine=tmax_affine)
+                                  affine=tmax_affine, nodata=pp_nodata)
         # runoff[1] = runoff[-1] = 0
         print "runoff ", runoff, np.sum(runoff)
         Q = mc.muskingum_routing(Q, ks, e, np.array(runoff), qold)
@@ -110,12 +85,6 @@ def main(argc):
         print "Q", Q, np.sum(Q)
         ro_ts.append(runoff)
         Q_ts.append(Q)
-
-    # plt.imshow(pet)
-    # plt.colorbar()
-    # plt.show()
-
-
 
     rr.pickle_current_states()
     # pickle current streamflows
@@ -135,7 +104,7 @@ if __name__ == '__main__':
     parser.add_argument('tmax', help='file with maximum daily temperature(K)')
     parser.add_argument('params', help='json dictionary with names of parameter files (see documentation)')
 
-    parser.add_argument('network_geojson', help='file with network topology in geojson format')
+    parser.add_argument('network_file', help='network file in shape or geojson format')
     parser.add_argument('basin_shp', help='shapefile with subcatchments for each node')
 
     parser.add_argument('--restart', dest='restart', action='store_true')

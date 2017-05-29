@@ -1,6 +1,8 @@
 from __future__ import print_function
 import numpy as np
+import pandas as pd
 from context import utils
+import pickle
 import nose
 
 
@@ -31,7 +33,12 @@ class TestParseNetwork(object):
         nose.tools.assert_equal(a.fn_vector, self.network_shp)
 
     def test_calc_connectivity_matrix(self):
-        pass
+        # Load pre-saved connectivity matrix
+        with open('../tests/test_data/conn_matrix.pickle', 'r') as f:
+            conmat = pickle.load(f)
+
+        a = utils.ParseNetwork(self.network_shp)
+        pd.DataFrame.equals(conmat, a.conn_matrix)
 
 
 # Test_hbv = np.zeros(6, dtype='3int8, float32, (2,3)float64')
