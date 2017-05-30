@@ -191,6 +191,12 @@ class HBV(RRmodel):
             hbv_ck0 = self.dt / props['hbv_ck0'] / 86400
             hbv_ck1 = self.dt / props['hbv_ck1'] / 86400
             hbv_ck2 = self.dt / props['hbv_ck2'] / 86400
+            # If a catchment is not covered by the climate layer, zonal_stats results
+            # in None and raises an exception
+            if props['runoff_mean'] is None:
+                props['runoff_mean'] = 0
+                print("WARNING: Catchment " + str(props['Subbasin']) + "  is probably"
+                      " outside the region covered by the climate grids")
             soil_layers.upper_reservoir += props['runoff_mean']
             if soil_layers.upper_reservoir > props['hbv_hl1']:
                 soil_layers.Q0 = (soil_layers.upper_reservoir - props['hbv_hl1']) * hbv_ck0

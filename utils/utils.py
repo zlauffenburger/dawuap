@@ -3,15 +3,19 @@ import numpy as np
 import pandas as pd
 import shapefile as shp
 import fiona
-from shapely.geometry import shape
+from shapely.geometry import mapping, shape
 import rasterio as rio
-import pickle
 
-class ParseNetwork(object):
+
+class ReadVector(object):
 
     def __init__(self, fn_vector):
         self.fn_vector = fn_vector
-        self.conn_matrix = self.calc_connectivity_matrix()
+        # Next three variables are updated after the call to calc_connectivity_matrix()
+        self.crs = None
+        self.schema = None
+        self.driver = None
+        self._read_features()
 
     def _read_features(self):
         # test it as fiona data source
@@ -19,10 +23,13 @@ class ParseNetwork(object):
         try:
             with fiona.open(self.fn_vector, 'r') as src:
                 assert len(src) > 0
+                self.crs = src.crs
+                self.schema = src.schema.copy()
+                self.driver = src.driver
 
             def fiona_generator(obj):
-                with fiona.open(obj, 'r') as src:
-                    for feature in src:
+                with fiona.open(obj, 'r') as src2:
+                    for feature in src2:
                         yield feature
 
             features_iter = fiona_generator(self.fn_vector)
@@ -31,6 +38,13 @@ class ParseNetwork(object):
             print "fn_vector does not point to a fiona object, error "
 
         return features_iter
+
+
+class ParseNetwork(ReadVector):
+
+    def __init__(self, fn_vector):
+        super(ParseNetwork, self).__init__(fn_vector)
+        self.conn_matrix = self.calc_connectivity_matrix()
 
     def calc_connectivity_matrix(self):
         feature_iter = self._read_features()
@@ -50,6 +64,104 @@ class ParseNetwork(object):
             df.loc[link] = 1
 
         return df
+
+
+class ParameterIO(ReadVector):
+    def __init__(self, fn_vector):
+        super(ParameterIO, self).__init__(fn_vector)
+
+    def _write_fiona_object(self, fn, crs=None, driver=None, schema=None, params=None):
+        """
+        Writes a vector file using fn_vector as template
+        :param fn: outfile name
+        :param params: dictionary
+        :return: None
+        """
+        if crs is None:
+            crs = self.crs
+        if driver is None:
+            driver = self.driver
+        if schema is None:
+            schema = self.schema
+
+        # TODO: solve problems writing projection information in shapefiles and geojson
+        feature_iter = self._read_features()
+        with fiona.open(fn, 'w', crs=crs, driver=driver, schema=schema) as sink:
+
+            for i, feats in enumerate(feature_iter):
+                geom = shape(feats['geometry'])
+                if params is not None:
+                    props = params[i]['properties']
+                else:
+                    props = feats['properties']
+                sink.write({'properties': props, 'geometry': mapping(geom)})
+
+    def write_muskingum_parameters(self, outfn, params):
+        # type: (str, list) -> None
+        """
+        Adds or updates the vector network file with the Muskingum-Cunge
+        parameters.
+        :param outfn: filename for updated vector network
+        :param params: list of parameter dictionaries with format [{'ARCID': ID, 'e': value, 'ks': value},{}]
+        :return: None
+        """
+        schema = self.schema.copy()
+        schema['properties']['e'] = 'float'
+        schema['properties']['ks'] = 'float'
+
+        lstDicts = []
+        feature_iter = self._read_features()
+        for i, feats in enumerate(feature_iter):
+            arc_id = feats['properties']['ARCID']
+            try:
+                val = (item for item in params if item['ARCID'] == arc_id).next()
+            except:
+                val = {}
+            feats['properties']['e'] = val.get('e', 0.35)
+            feats['properties']['ks'] = val.get('ks', 82400)
+            lstDicts.append(feats)
+
+        self._write_fiona_object(outfn, schema=schema, params=lstDicts)
+
+    def write_hvb_parameters(self, outfn, params):
+        # type: (str, list) -> None
+        """
+        Adds or updates the vector file of model subwatersheds with the hbv RR model parameters.
+
+        :param outfn: filename for updated vector network
+        :param params: list of parameter dictionaries with format [{'ARCID': ID, 'e': value, 'ks': value},{}]
+        :return: None
+        """
+        schema = self.schema.copy()
+        schema['properties']['hbv_ck0'] = 'float'
+        schema['properties']['hbv_ck1'] = 'float'
+        schema['properties']['hbv_ck2'] = 'float'
+        schema['properties']['hbv_hl1'] = 'float'
+        schema['properties']['hbv_perc'] = 'float'
+        schema['properties']['hbv_pbase'] = 'int'
+
+        lstDicts = []
+        feature_iter = self._read_features()
+        for i, feats in enumerate(feature_iter):
+            arc_id = feats['properties']['GRIDCODE']
+            try:
+                val = (item for item in params if item['GRIDCODE'] == arc_id).next()
+            except:
+                val = {}
+
+            feats['properties']['hbv_ck0'] = val.get('hbv_ck0', 10.)
+            feats['properties']['hbv_ck1'] = val.get('hbv_ck1', 50.)
+            feats['properties']['hbv_ck2'] = val.get('hbv_ck2', 10000)
+            feats['properties']['hbv_hl1'] = val.get('hbv_hl1', 50)
+            feats['properties']['hbv_perc'] = val.get('hbv_perc', 50)
+            feats['properties']['hbv_pbase'] = val.get('hbv_pbase', 5)
+            lstDicts.append(feats)
+
+        self._write_fiona_object(outfn, schema=schema, params=lstDicts)
+
+
+
+
 
 
 def write_array_as_tiff(fn, template, array):
@@ -80,6 +192,43 @@ def write_structured_parameter_array(filenames, shape):
 
 
     #np.zeros(filenames.items(), dtype=[('', '', )])
+
+
+def add_muskingum_model_parameters_to_network(vectorNetwork, outshp=''):
+    """
+    Add default muskingum cunge parameters to streamflow network
+    :param vectorNetwork:
+    :param outshp:
+    :return:
+    """
+
+    def _read_features(inFile):
+        # test it as fiona data source
+        features_iter = None
+        try:
+            with fiona.open(inFile, 'r') as src:
+                assert len(src) > 0
+
+            def fiona_generator(obj):
+                with fiona.open(obj, 'r') as src:
+                    for feature in src:
+                        yield feature
+
+            features_iter = fiona_generator(inFile)
+
+        except (AssertionError, TypeError, IOError, OSError):
+            print "fn_vector does not point to a fiona object, error "
+
+        return features_iter
+
+    feature_iter = _read_features(vectorNetwork)
+    lst_node_connections = []
+
+    for i, feats in enumerate(feature_iter):
+        geom = shape(feats['geometry'])
+        props = feats['properties']
+        lst_node_connections.append((props["FROM_NODE"], props["TO_NODE"]))
+
 
 def add_rr_model_parameters_to_shapefile(shapefile, outshp=''):
     """

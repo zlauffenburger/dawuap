@@ -30,6 +30,7 @@ def main(argc):
         tmax_nodata = int(tmax.nodata)
         tmax_data = tmax.read()
         tmax_data[tmax_data != tmax_nodata] -= 273.15
+
     hbv_pars = {}
     with open(argc.params) as json_file:
         pars = json.load(json_file)
@@ -39,6 +40,11 @@ def main(argc):
 
     # retrieve latitude of cells
     lon, lat = tmax_affine * np.indices(tmin_data[0, :, :].shape)
+
+    # retrieve adjacency matrix
+    graph = utils.ParseNetwork(argc.network_file)
+    adj_net = graph.conn_matrix
+    num_links = len(adj_net.index)
 
     # initiate hydrologic engine using pickled states from previous run
     if argc.restart:
@@ -53,24 +59,20 @@ def main(argc):
         pond = np.zeros_like(pp_data[0, :, :])
         sm = np.zeros_like(pp_data[0, :, :])
         soils = []
-        Q = np.zeros((3))  # Num 3 is not magic, it initializes to zero the three soil layers
+        Q = np.zeros(num_links)
 
-    # retrieve adjacency matrix
-    graph = utils.ParseNetwork(argc.network_file)
-    adj_net = graph.conn_matrix
 
     #adj_net = np.array([[0, 0, 1], [1, 0, 0], [0, 0, 0]])
     rr = hyd.HBV(86400, swe, pond, sm, soils, **hbv_pars)
     mc = hyd.routing(adj_net, 86400)
 
-    num_links = len(adj_net.index)
+
 
     ro_ts = []
     Q_ts = []
-    # Q = np.zeros((3))
-    qold = np.zeros((num_links))
-    e = np.zeros((num_links)) + 0.4  # TODO: 0.4 seems a magic number
-    ks = np.zeros((num_links)) + 864000  # secs to day
+    qold = np.zeros(num_links)
+    e = np.zeros(num_links) + 0.4  # TODO: 0.4 seems a magic number
+    ks = np.zeros(num_links) + 864000  # secs to day
 
     for i in np.arange(pp_data.shape[0]):
         print "Calcuating time step ", i + 1
@@ -104,7 +106,7 @@ if __name__ == '__main__':
     parser.add_argument('tmax', help='file with maximum daily temperature(K)')
     parser.add_argument('params', help='json dictionary with names of parameter files (see documentation)')
 
-    parser.add_argument('network_file', help='network file in shape or geojson format')
+    parser.add_argument('network_file', help='stream network, shapefile or geojson format')
     parser.add_argument('basin_shp', help='shapefile with subcatchments for each node')
 
     parser.add_argument('--restart', dest='restart', action='store_true')

@@ -59,7 +59,6 @@ class routing(object):
         #     n *= 2
         #     min_stab = 2 * K * e
 
-
         for i in range(n):
 
             a = np.diag(K * (1-e) + dt * 0.5)
