@@ -66,13 +66,11 @@ def main(argc):
     rr = hyd.HBV(86400, swe, pond, sm, soils, **hbv_pars)
     mc = hyd.routing(adj_net, 86400)
 
-
-
     ro_ts = []
     Q_ts = []
     qold = np.zeros(num_links)
-    e = np.zeros(num_links) + 0.4  # TODO: 0.4 seems a magic number
-    ks = np.zeros(num_links) + 864000  # secs to day
+    e = graph.get_parameter('e')
+    ks = graph.get_parameter('ks')
 
     for i in np.arange(pp_data.shape[0]):
         print "Calcuating time step ", i + 1

@@ -15,6 +15,8 @@ class ReadVector(object):
         self.crs = None
         self.schema = None
         self.driver = None
+        self.e = None
+        self.ks = None
         self._read_features()
 
     def _read_features(self):
@@ -64,6 +66,17 @@ class ParseNetwork(ReadVector):
             df.loc[link] = 1
 
         return df
+
+    def get_parameter(self, param):
+        feature_iter = self._read_features()
+
+        lst_param = []
+
+        for i, feats in enumerate(feature_iter):
+            lst_param.append(
+                feats['properties'][param]
+            )
+        return lst_param
 
 
 class ParameterIO(ReadVector):

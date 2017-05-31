@@ -44,6 +44,12 @@ class TestParseNetwork(object):
         a = utils.ParseNetwork(self.network_shp)
         pd.DataFrame.equals(conmat, a.conn_matrix)
 
+    def test_get_parameter(self):
+        a = utils.ParseNetwork(self.network_shp)
+        area = a.get_parameter('AreaC')
+        print(str(area))
+        isinstance(area, list)
+
 
 class TestParameterIO(object):
     @classmethod
