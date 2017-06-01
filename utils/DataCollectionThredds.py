@@ -23,6 +23,7 @@ def copyfileobj(fsrc, fdst, callback, length=4*1024):
         copied += len(buf)
         callback(copied)
 
+
 class DataCollectionThredds:
 
     def __init__(self, base_url, date_start, date_end, attributes, bounds, flip=False):

@@ -1,5 +1,5 @@
 import argparse
-import utils
+import utilsVector
 
 
 def main(argc):
@@ -10,7 +10,7 @@ def main(argc):
     :param outFile:  'optional output filename with modified vectorFile'
     """
 
-    utils.add_rr_model_parameters_to_shapefile(argc.vectorFile, argc.outFile)
+    utilsVector.add_rr_model_parameters_to_shapefile(argc.vectorFile, argc.outFile)
 
 
 
