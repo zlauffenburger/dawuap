@@ -69,8 +69,8 @@ def main(argc):
     ro_ts = []
     Q_ts = []
     qold = np.zeros(num_links)
-    e = graph.get_parameter('e')
-    ks = graph.get_parameter('ks')
+    e = np.array(graph.get_parameter('e'))
+    ks = np.array(graph.get_parameter('ks'))
 
     for i in np.arange(pp_data.shape[0]):
         print "Calcuating time step ", i + 1

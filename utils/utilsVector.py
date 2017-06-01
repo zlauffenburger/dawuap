@@ -1,10 +1,9 @@
 from __future__ import division
-import numpy as np
+#import numpy as np
 import pandas as pd
 #import shapefile as shp
 import fiona
 from shapely.geometry import mapping, shape
-import rasterio as rio
 
 
 class ReadVector(object):
@@ -123,7 +122,7 @@ class ParseNetwork(ReadVector):
         return lst_param
 
 
-class ParameterIO(ReadVector):
+class VectorParameterIO(ReadVector):
     """
     Class to provide model parameter fields adn values to network and basin vector datasets.
     It has the following public methods:
@@ -134,7 +133,7 @@ class ParameterIO(ReadVector):
         Initializes the object with a polygon (basin) or multiline (network) vector dataset
         :param fn_vector: fn of vector dataset
         """
-        super(ParameterIO, self).__init__(fn_vector)
+        super(VectorParameterIO, self).__init__(fn_vector)
 
     def read_features(self):
         """
@@ -163,9 +162,9 @@ class ModelVectorDatasets(object):
     def __init__(self, fn_network=None, fn_subsheds=None):
 
         if fn_network is not None:
-            self.network = ParameterIO(fn_network)
+            self.network = VectorParameterIO(fn_network)
         if fn_subsheds is not None:
-            self.subsheds = ParameterIO(fn_subsheds)
+            self.subsheds = VectorParameterIO(fn_subsheds)
 
     def write_muskingum_parameters(self, outfn, params=None):
         # type: (str, list) -> None
@@ -241,58 +240,7 @@ class ModelVectorDatasets(object):
         self.subsheds.write_dataset(outfn, schema=schema, params=lstDicts)
 
 
-class ReadRaster(object):
-    """
-    Base class to read vector datasets, retrieve and keep metadata,
-        and serialize the reading of vector features
-    """
 
-    def __init__(self, fn_base_raster):
-        self.fn_base_raster = fn_base_raster
-        self.profile
-        self.shape
-
-    def _read_base_raster(self):
-        with rio.open(self.fn_base_raster, 'r') as src:
-            self.profile = src.profile
-            self.shape = src.shape
-
-
-def write_array_as_tiff(fn, template, array):
-    """
-    Utility to write numpy arrays as tiff file using metadata from a template GeoTiff map.
-
-    :param fn: filename of output tiff file, string
-    :param template: filename of valid GeoTiff image to obtain metadata for output image
-    :param array: numpy array to be converted to tiff
-    :return: None
-    """
-    with rio.open(template, 'r') as src:
-        profile = src.profile
-        if not isinstance(array, np.ndarray) or array.shape != src.shape:
-            raise ValueError("Shape mismatch!. Template shape is %s. Arrays shape is %s" % (src.shape, array.shape))
-        profile.update(driver='GTiff', count=1, dtype='float64')
-        with rio.open(fn, 'w', **profile) as dst:
-            dst.write(array.astype('float64'), 1)
-
-
-def write_structured_parameter_array(filenames, shape):
-    """
-    Utility to write a json dictionary with HBV model raster parameters.
-    The GeoTiff files must exist
-
-    :param filenames:
-    :param shape:
-    :return:
-    """
-    tp = zip(filenames.keys(), ['float32' for i in range(len(filenames))], [shape for i in range(len(filenames))])
-    pars = np.empty(len(filenames), dtype=tp)
-
-    for name, items in filenames.items():
-        with rio.open(items, 'r') as src:
-            pars[name] = src.read()
-
-    #np.zeros(filenames.items(), dtype=[('', '', )])
 
 
 # def add_muskingum_model_parameters_to_network(vectorNetwork, outshp=''):
