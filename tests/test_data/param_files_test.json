@@ -1,0 +1,1 @@
+{"soil_beta": "../tests/test_data/soil_beta.tif", "pp_temp_thres": "../tests/test_data/pp_temp_thres.tif", "aet_lp_param": "../tests/test_data/aet_lp_param.tif", "ddf": "../tests/test_data/ddf.tif", "soil_max_wat": "../tests/test_data/soil_max_wat.tif"}
