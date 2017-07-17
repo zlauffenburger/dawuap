@@ -7,9 +7,9 @@ def hamon_pe(t_avg, latitude, doy):
     Computes potential evapotranspiration using the Hamon method, which depends on average temperature,
     daytime length, and saturation vapor pressure
 
-    :param t_avg, Average temperature, C
-    :param latitude, latitude, deg
-    :param doy, day of year, starting on jan 1st
+    :param t_avg: Average temperature, C
+    :param latitude: latitude, deg
+    :param doy: day of year, starting on jan 1st
     :return: evapotranspiration, mm/day
     """
 

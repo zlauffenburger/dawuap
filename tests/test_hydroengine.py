@@ -29,7 +29,7 @@ class TestInitialization(object):
         pass
 
     def test_init(self):
-        a = hydroengine.routing(conn, 0.5)
+        a = hydroengine.Routing(conn, 0.5)
         np.testing.assert_allclose(conn, a.conn)
         nose.tools.assert_equal(a.n, np.shape(conn)[0])
 
@@ -50,7 +50,7 @@ class TestRouting(object):
         pass
 
     def test_muskingum_routing(self):
-        a = hydroengine.routing(conn, 0.5)
+        a = hydroengine.Routing(conn, 0.5)
         K =  np.ones(a.n)*0.7
         K[2] = 0.6
         e = np.ones_like(K)*0.42

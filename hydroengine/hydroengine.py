@@ -1,16 +1,29 @@
 from __future__ import division
 import numpy as np
 
-class routing(object):
-    """A rainfall-runoff model for water management and decision support system
+
+class Routing(object):
+    """
+    A hydrologic engine for a water management and decision support system.
+
+    This is the central class of the hydrologic component. It is initialized with the
+    connectivity matrix of the network and routes runoff generated at each node subcatchment
+    through out the network.
+
+    It uses outputs from the rainfall runoff models as water so
 
     """
     def __init__(self, conn, dt):
-        """Cass hydro.
+        """
+        Class initialization. It requires a connectivity matrix describing the topology of the
+         water distribution network. The connectivity matrix is square and sparse, of size
+           equal to the number of nodes to the network. Each element in the matrix represents
+           a link (reach, channel) between nodes (arbitrary points in the river network,
+           diversion points, gauges, water users, etc).
 
-        :args:
-            :conn: nxn connectivity matrix
-            :dt: time step (scalar).
+        :param conn: nxn binary connectivity matrix, where n is the number of nodes in the
+        network.
+        :param dt: time step (seconds, scalar).
 
         """
 
@@ -21,14 +34,13 @@ class routing(object):
     def muskingum_routing(self, Qt, K, e, qnew, qold):
         """Routes water through a network graph using the Muskingum-Cunge method.
 
-        This function takes an initial distribution of streamflows at noddes
+        This function takes an initial distribution of streamflows at nodes
         in the network and routes them one time step.
 
-        :args:
-            :Qt: vector of streamflows at time t
-            :K: vector of reach storage parameters of size n.
-            :e: vector of balances between inflows and outflows
-            :q: vector of lateral inflows
+        :param Qt: vector of streamflows at time t
+        :param K: vector of reach storage parameters of size n.
+        :param e: vector of balances between inflows and outflows
+        :param q: vector of lateral inflows
 
         :return: vector of size n with streamflows at time t+1.
         """

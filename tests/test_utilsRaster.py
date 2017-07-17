@@ -51,12 +51,12 @@ class TestRasterDatasetHBV(object):
         pass
 
     def test_init(self):
-        a = utils.ModelRaterDatasetHBV(self.fn_netcdf,
-                                       self.fn_temp_thres,
-                                       self.fn_ddf,
-                                       self.fn_soil_max_wat,
-                                       self.fn_soil_beta,
-                                       self.fn_aet_lp_param)
+        a = utils.ModelRasterDatasetHBV(self.fn_netcdf,
+                                        self.fn_temp_thres,
+                                        self.fn_ddf,
+                                        self.fn_soil_max_wat,
+                                        self.fn_soil_beta,
+                                        self.fn_aet_lp_param)
         nose.tools.assert_equal(a.fn_base_map, self.fn_netcdf)
         nose.tools.assert_equal(a.fn_temp_thres, self.fn_temp_thres)
         nose.tools.assert_equal(a.fn_ddf, self.fn_ddf)
@@ -67,12 +67,12 @@ class TestRasterDatasetHBV(object):
         nose.tools.assert_greater(a.base_map.shape[1], 0)
 
     def test_write_parameter_input_file(self):
-        a = utils.ModelRaterDatasetHBV(self.fn_netcdf,
-                                       self.fn_temp_thres,
-                                       self.fn_ddf,
-                                       self.fn_soil_max_wat,
-                                       self.fn_soil_beta,
-                                       self.fn_aet_lp_param)
+        a = utils.ModelRasterDatasetHBV(self.fn_netcdf,
+                                        self.fn_temp_thres,
+                                        self.fn_ddf,
+                                        self.fn_soil_max_wat,
+                                        self.fn_soil_beta,
+                                        self.fn_aet_lp_param)
         a.write_parameter_input_file('../tests/test_data/param_files.json')
         filecmp.cmp('../tests/test_data/param_files.json', self.fn_json_param)
 

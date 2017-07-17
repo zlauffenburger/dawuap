@@ -59,7 +59,7 @@ class RasterParameterIO(ReadRaster):
         self._write_array_to_geotiff(fn_out, np_array)
 
 
-class ModelRaterDatasetHBV(object):
+class ModelRasterDatasetHBV(object):
 
     def __init__(self,
                  fn_base_map,
@@ -69,15 +69,16 @@ class ModelRaterDatasetHBV(object):
                  fn_soil_beta=None,
                  fn_aet_lp_param=None):
         """
-        Initializes the class holding the HBV's raster parameters. A base map, typically
-        a climate input map, is required. The rest of the object is initialized
-        with the parameter maps. If the maps do not exist it initializes the maps
-        with a default value
+        Initializes a class to write raster parameters for the HBV model. A base map, typically
+        a climate input map, is required to obtain the geometry of the domain.
+        Optional parameter maps can be used to initialize the object to specified parameter values.
+        If the maps do not exist it initializes the maps with a default value
 
-        :param fn_temp_thres:
-        :param fn_ddf:
-        :param fn_soil_max_wat:
-        :param fn_soil_beta:
+        :param fn_base_map: filename to map to obtain the geometry and projection of the domain
+        :param fn_temp_thres: filename to map with snow-rain temperature threshold
+        :param fn_ddf: filename to map with degree-day factor
+        :param fn_soil_max_wat: filename to map with soil maximum storage parameter
+        :param fn_soil_beta: filename to map with
         :param fn_aet_lp_param:
         :return:
         """
