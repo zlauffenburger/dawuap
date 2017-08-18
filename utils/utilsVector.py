@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""Classes to manipulate vector datasets used in daWUAP.
+
+The ReadVector base class reads and writes fiona geometry objects. This class is inherited by
+the other three classes in this module.
+
+"""
 from __future__ import division
 #import numpy as np
 import pandas as pd
@@ -7,20 +14,30 @@ from shapely.geometry import mapping, shape
 
 
 class ReadVector(object):
-    """
-    Base class to read vector datasets, retrieve and keep metadata,
-     and serialize the reading of vector features
+
+    """Base class to read vector datasets using Fiona.
+
+    Reads and stores metadata from fiona objects, and facilitates the writing of vector files.
+
+
     """
 
     def __init__(self, fn_vector):
+        """The constructors requires a path to a file such as 'data/map_spain.shp'.
+
+        An internal call to the protected ``_read_fiona_object()`` method opens the file and
+        populates the metadata variables.
+
+        """
         self.fn_vector = fn_vector
-        # Next three variables are updated after the call to _read_features()
+        # Next three variables are updated after the call to _read_fiona_object()
         self.crs = None
         self.schema = None
         self.driver = None
         self._read_fiona_object()
 
     def _read_fiona_object(self):
+        """Returns an iterator over records in the vector file"""
         # test it as fiona data source
         features_iter = None
         try:
@@ -43,14 +60,24 @@ class ReadVector(object):
         return features_iter
 
     def _write_fiona_object(self, fn, crs=None, driver=None, schema=None, params=None):
-        """
-        Writes a vector file using fn_vector as template
-        :param fn: outfile name
+        """Writes a vector file using fn_vector as template.
+
+        Returns nothing.
+
+
+        :param fn: output file name
         :param crs:
         :param driver:
         :param schema:
         :param params: dictionary
+        :type fn: str
+        :type driver: str
+        :type schema: str
+        :type params: dict
         :return: None
+        :rtype: None
+
+        .. todo:: Solve problem writing projection info in shp and geojson. Also overwriting geojson files
         """
         if crs is None:
             crs = self.crs
@@ -73,7 +100,8 @@ class ReadVector(object):
 
 
 class ParseNetwork(ReadVector):
-    """
+    """Returns a dataframe.
+
     Class to parse the model stream network. It calculates the connectivity matrix
     during the initialization and makes it available as a class variable.
     This class has the following public methods:

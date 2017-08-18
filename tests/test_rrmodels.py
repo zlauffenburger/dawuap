@@ -5,7 +5,7 @@ import cPickle as pickle
 import nose
 import rasterstats as rst
 import rasterio as rio
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import json
 
 
