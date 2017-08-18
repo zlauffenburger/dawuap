@@ -1,1 +1,1 @@
-/home/marco/workspace/linknodemodel/utils/writeRainfallRunofflModelParameters.py
+../utils/writeRainfallRunofflModelParameters.py

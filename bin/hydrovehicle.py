@@ -1,1 +1,1 @@
-/home/marco/workspace/linknodemodel/hydrovehicle/hydrovehicle.py
+../hydrovehicle/hydrovehicle.py

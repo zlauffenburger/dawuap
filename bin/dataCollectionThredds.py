@@ -1,1 +1,1 @@
-/home/marco/workspace/linknodemodel/utils/DataCollectionThredds.py
+../utils/DataCollectionThredds.py
