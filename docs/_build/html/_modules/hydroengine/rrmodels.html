@@ -1,0 +1,369 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>hydroengine.rrmodels &#8212; hydroengine  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">hydroengine  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for hydroengine.rrmodels</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">.RRmodel</span> <span class="k">import</span> <span class="n">RRmodel</span>
+<span class="kn">import</span> <span class="nn">cPickle</span> <span class="k">as</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">rasterstats</span> <span class="k">as</span> <span class="nn">rst</span>
+<span class="kn">import</span> <span class="nn">rasterio</span> <span class="k">as</span> <span class="nn">rio</span>
+
+
+<div class="viewcode-block" id="Soil"><a class="viewcode-back" href="../../hydroengine.html#hydroengine.rrmodels.Soil">[docs]</a><span class="k">class</span> <span class="nc">Soil</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ur</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">q0</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">q1</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">q2</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">qall</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mi">25</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">upper_reservoir</span> <span class="o">=</span> <span class="n">ur</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lower_reservoir</span> <span class="o">=</span> <span class="n">lr</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Q0</span> <span class="o">=</span> <span class="n">q0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Q1</span> <span class="o">=</span> <span class="n">q1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Q2</span> <span class="o">=</span> <span class="n">q2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Qall</span> <span class="o">=</span> <span class="n">qall</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">uh_base</span> <span class="o">=</span> <span class="n">base</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_runoff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">runoff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_runoff</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@runoff</span><span class="o">.</span><span class="n">getter</span>
+    <span class="k">def</span> <span class="nf">runoff</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runoff</span>
+
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">upper_reservoir</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lower_reservoir</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Q0</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Q1</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Q2</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Qall</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">upper_reservoir</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lower_reservoir</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Q0</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Q1</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Q2</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">Qall</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">upper_reservoir</span><span class="p">,</span>
+                                   <span class="n">other</span><span class="o">.</span><span class="n">lower_reservoir</span><span class="p">,</span>
+                                   <span class="n">other</span><span class="o">.</span><span class="n">Q0</span><span class="p">,</span>
+                                   <span class="n">other</span><span class="o">.</span><span class="n">Q1</span><span class="p">,</span>
+                                   <span class="n">other</span><span class="o">.</span><span class="n">Q2</span><span class="p">,</span>
+                                   <span class="n">other</span><span class="o">.</span><span class="n">Qall</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span> <span class="o">==</span> <span class="n">other</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="HBV"><a class="viewcode-back" href="../../hydroengine.html#hydroengine.rrmodels.HBV">[docs]</a><span class="k">class</span> <span class="nc">HBV</span><span class="p">(</span><span class="n">RRmodel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Implementation of the classic HVB rainfall-runoff model</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">,</span> <span class="n">swe_o</span><span class="p">,</span> <span class="n">pond_o</span><span class="p">,</span> <span class="n">sm_o</span><span class="p">,</span> <span class="n">soils_o</span><span class="o">=</span><span class="p">[],</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+
+        <span class="c1"># Geomtry information</span>
+        <span class="c1">#self.pixel_area = params[&#39;image_res&#39;]*params[&#39;image_res&#39;]</span>
+        <span class="c1">#self.catchment_area = params[&#39;catch_area&#39;]</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">HBV</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+
+        <span class="c1"># snow paramters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t_thres</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;pp_temp_thres&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ddf</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;ddf&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">/</span> <span class="mi">86400</span>
+
+        <span class="c1"># distributed soil paramters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fcap</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;soil_max_wat&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;soil_beta&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lp</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;aet_lp_param&#39;</span><span class="p">]</span>
+
+        <span class="c1"># base of the unit hydrograph</span>
+        <span class="c1">#self.base = params[&#39;p_base&#39;]</span>
+
+        <span class="c1"># self.hl1 = params[&#39;storage_parameter_1&#39;]</span>
+        <span class="c1"># self.hl2 = params[&#39;storage_parameter_2&#39;]</span>
+        <span class="c1">#</span>
+        <span class="c1"># self.ck0 = params[&#39;surface_conductance&#39;]</span>
+        <span class="c1"># self.ck1 = params[&#39;mid_layer_conductance&#39;]</span>
+        <span class="c1"># self.ck2 = params[&#39;lower_layer_conductance&#39;]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">soils</span> <span class="o">=</span> <span class="n">soils_o</span>  <span class="c1"># Soil reinitialization file. Dictionary with geo_json objects</span>
+
+        <span class="c1"># snow state and flux variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">swe</span> <span class="o">=</span> <span class="n">swe_o</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pond</span> <span class="o">=</span> <span class="n">pond_o</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">melt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">)</span>
+
+        <span class="c1"># soil state and flux variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sm</span> <span class="o">=</span> <span class="n">sm_o</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_sm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ovlnd_flow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">aet</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">)</span>
+
+<div class="viewcode-block" id="HBV.snow_pack"><a class="viewcode-back" href="../../hydroengine.html#hydroengine.rrmodels.HBV.snow_pack">[docs]</a>    <span class="k">def</span> <span class="nf">snow_pack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">incid_precip</span><span class="p">,</span> <span class="n">t_max</span><span class="p">,</span> <span class="n">t_min</span><span class="p">):</span>
+
+        <span class="n">swe</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">)</span>
+        <span class="n">rain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pond</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">melt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">)</span>
+
+        <span class="n">ind_allswe</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">less_equal</span><span class="p">(</span><span class="n">t_max</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_thres</span><span class="p">)</span>
+        <span class="n">ind_allrain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">greater</span><span class="p">(</span><span class="n">t_min</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_thres</span><span class="p">)</span>
+        <span class="n">ind_mixed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">ind_allswe</span><span class="p">,</span> <span class="n">ind_allrain</span><span class="p">))</span>
+
+        <span class="n">swe</span><span class="p">[</span><span class="n">ind_allswe</span><span class="p">]</span> <span class="o">=</span> <span class="n">incid_precip</span><span class="p">[</span><span class="n">ind_allswe</span><span class="p">]</span>
+        <span class="n">rain</span><span class="p">[</span><span class="n">ind_allrain</span><span class="p">]</span> <span class="o">=</span> <span class="n">incid_precip</span><span class="p">[</span><span class="n">ind_allrain</span><span class="p">]</span>
+        <span class="n">swe</span><span class="p">[</span><span class="n">ind_mixed</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">incid_precip</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">t_thres</span> <span class="o">-</span> <span class="n">t_min</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">t_max</span> <span class="o">-</span> <span class="n">t_min</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mf">0.01</span><span class="p">))</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)))[</span><span class="n">ind_mixed</span><span class="p">]</span>
+        <span class="n">rain</span><span class="p">[</span><span class="n">ind_mixed</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">incid_precip</span> <span class="o">-</span> <span class="n">swe</span><span class="p">)[</span><span class="n">ind_mixed</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">swe</span> <span class="o">+=</span> <span class="n">swe</span>
+
+        <span class="c1"># Begin snowmelt routine</span>
+
+        <span class="n">tp</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">t_max</span> <span class="o">+</span> <span class="n">t_min</span><span class="p">)</span>
+
+        <span class="n">ind_melt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">greater</span><span class="p">(</span><span class="n">tp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_thres</span><span class="p">)</span>
+        <span class="n">ind_swe</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">greater</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># if average temp is above threshold and there is swe on the ground, produce melt</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">ind_melt</span><span class="p">,</span> <span class="n">ind_swe</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">melt</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ddf</span> <span class="o">*</span> <span class="p">(</span><span class="n">tp</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_thres</span><span class="p">))[</span><span class="n">ind</span><span class="p">]</span>
+
+        <span class="c1"># if the amount of potential melt is larger than available swe, cap melt to available swe</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">melt</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">greater</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">melt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">greater</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">melt</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">)]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">swe</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">melt</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">pond</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">melt</span> <span class="o">+</span> <span class="n">rain</span></div>
+
+<div class="viewcode-block" id="HBV.soil_processes"><a class="viewcode-back" href="../../hydroengine.html#hydroengine.rrmodels.HBV.soil_processes">[docs]</a>    <span class="k">def</span> <span class="nf">soil_processes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pot_et</span><span class="p">):</span>
+
+
+        <span class="c1"># calculate AET</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aet</span> <span class="o">=</span> <span class="p">(</span><span class="n">pot_et</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sm</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fcap</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">lp</span><span class="p">))</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mf">1.0</span><span class="p">))</span>
+
+        <span class="c1"># For cell where soil moisture is already at capacity, runoff is all the ponded water plus excess water in soil</span>
+        <span class="n">ind_sm_geq_fcap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">greater_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fcap</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ovlnd_flow</span><span class="p">[</span><span class="n">ind_sm_geq_fcap</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pond</span><span class="p">[</span><span class="n">ind_sm_geq_fcap</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sm</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">fcap</span><span class="p">)[</span><span class="n">ind_sm_geq_fcap</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sm</span><span class="p">[</span><span class="n">ind_sm_geq_fcap</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fcap</span><span class="p">[</span><span class="n">ind_sm_geq_fcap</span><span class="p">]</span>
+
+        <span class="c1"># in all other cells calculate the portion of ponded water that goes into the soil storage</span>
+        <span class="n">ind_sm_lt_fcap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">ind_sm_geq_fcap</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_sm</span><span class="p">[</span><span class="n">ind_sm_lt_fcap</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pond</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">sm</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">fcap</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">)</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="nb">max</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)))[</span><span class="n">ind_sm_lt_fcap</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sm</span><span class="p">[</span><span class="n">ind_sm_lt_fcap</span><span class="p">]</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_sm</span><span class="p">[</span><span class="n">ind_sm_lt_fcap</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ovlnd_flow</span><span class="p">[</span><span class="n">ind_sm_lt_fcap</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pond</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta_sm</span><span class="p">)[[</span><span class="n">ind_sm_lt_fcap</span><span class="p">]]</span>
+
+        <span class="c1"># Check if cell exceed storage capacity after adding delta_sm</span>
+        <span class="n">ind_sm_geq_fcap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">greater_equal</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fcap</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ovlnd_flow</span><span class="p">[</span><span class="n">ind_sm_geq_fcap</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sm</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">fcap</span><span class="p">)[</span><span class="n">ind_sm_geq_fcap</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sm</span><span class="p">[</span><span class="n">ind_sm_geq_fcap</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fcap</span><span class="p">[</span><span class="n">ind_sm_geq_fcap</span><span class="p">]</span>
+
+        <span class="c1"># if there is sufficient soil moisture to satisfy aet, reduce sm</span>
+        <span class="n">ind_sm_gt_aet</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">greater</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">aet</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sm</span><span class="p">[</span><span class="n">ind_sm_gt_aet</span><span class="p">]</span> <span class="o">-=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aet</span><span class="p">[</span><span class="n">ind_sm_gt_aet</span><span class="p">]</span>
+        <span class="c1"># otherwise take all water storage and limit aet</span>
+        <span class="n">ind_sm_leq_aet</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">ind_sm_gt_aet</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aet</span><span class="p">[</span><span class="n">ind_sm_leq_aet</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sm</span><span class="p">[</span><span class="n">ind_sm_leq_aet</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sm</span><span class="p">[</span><span class="n">ind_sm_leq_aet</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span></div>
+
+<div class="viewcode-block" id="HBV.precipitation_excess"><a class="viewcode-back" href="../../hydroengine.html#hydroengine.rrmodels.HBV.precipitation_excess">[docs]</a>    <span class="k">def</span> <span class="nf">precipitation_excess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shp_wtshds</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="c1"># builds a geojson object with required statistics for each catchment</span>
+        <span class="c1">#print &quot;Calculating zonal statistics for each HRU...&quot;</span>
+        <span class="n">nodata</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;nodata&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">has_key</span><span class="p">(</span><span class="s1">&#39;nodata&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="o">-</span><span class="mi">32767</span>
+        <span class="n">stw1</span> <span class="o">=</span> <span class="n">rst</span><span class="o">.</span><span class="n">zonal_stats</span><span class="p">(</span><span class="n">shp_wtshds</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ovlnd_flow</span><span class="p">,</span> <span class="n">nodata</span><span class="o">=</span><span class="n">nodata</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="n">affine</span><span class="p">,</span> <span class="n">geojson_out</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                    <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;runoff_&#39;</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="n">stats</span><span class="p">)</span>
+
+        <span class="n">soil_layers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">soils</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stw1</span><span class="p">)):</span>
+            <span class="c1">#print &quot;processing catchment &quot;, i</span>
+            <span class="n">props</span> <span class="o">=</span> <span class="n">stw1</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;properties&#39;</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">soils</span><span class="p">:</span> <span class="c1"># if there is no dictionary from a previous time step, create a new soil object</span>
+                <span class="n">soil_layers</span> <span class="o">=</span> <span class="n">Soil</span><span class="p">(</span><span class="n">base</span><span class="o">=</span><span class="n">props</span><span class="p">[</span><span class="s1">&#39;hbv_pbase&#39;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">soil_layers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">soils</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="c1">#props = stw1[i][&#39;properties&#39;]</span>
+
+            <span class="c1"># conversion stuff</span>
+            <span class="n">hbv_ck0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">/</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;hbv_ck0&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">86400</span>
+            <span class="n">hbv_ck1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">/</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;hbv_ck1&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">86400</span>
+            <span class="n">hbv_ck2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">/</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;hbv_ck2&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">86400</span>
+            <span class="c1"># If a catchment is not covered by the climate layer, zonal_stats results</span>
+            <span class="c1"># in None and raises an exception</span>
+            <span class="k">if</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;runoff_mean&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">props</span><span class="p">[</span><span class="s1">&#39;runoff_mean&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: Catchment &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">props</span><span class="p">[</span><span class="s1">&#39;Subbasin&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="s2">&quot;  is probably&quot;</span>
+                      <span class="s2">&quot; outside the region covered by the climate grids&quot;</span><span class="p">)</span>
+            <span class="n">soil_layers</span><span class="o">.</span><span class="n">upper_reservoir</span> <span class="o">+=</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;runoff_mean&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">upper_reservoir</span> <span class="o">&gt;</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;hbv_hl1&#39;</span><span class="p">]:</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">Q0</span> <span class="o">=</span> <span class="p">(</span><span class="n">soil_layers</span><span class="o">.</span><span class="n">upper_reservoir</span> <span class="o">-</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;hbv_hl1&#39;</span><span class="p">])</span> <span class="o">*</span> <span class="n">hbv_ck0</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">upper_reservoir</span> <span class="o">-=</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">Q0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">Q0</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+            <span class="k">if</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">upper_reservoir</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">Q1</span> <span class="o">=</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">upper_reservoir</span> <span class="o">*</span> <span class="n">hbv_ck1</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">upper_reservoir</span> <span class="o">-=</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">Q1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">Q1</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+            <span class="k">if</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">upper_reservoir</span> <span class="o">&gt;</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;hbv_perc&#39;</span><span class="p">]:</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">upper_reservoir</span> <span class="o">-=</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;hbv_perc&#39;</span><span class="p">]</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">lower_reservoir</span> <span class="o">+=</span> <span class="n">props</span><span class="p">[</span><span class="s1">&#39;hbv_perc&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">lower_reservoir</span> <span class="o">+=</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">upper_reservoir</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">upper_reservoir</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+            <span class="k">if</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">lower_reservoir</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">Q2</span> <span class="o">=</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">lower_reservoir</span> <span class="o">*</span> <span class="n">hbv_ck2</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">lower_reservoir</span> <span class="o">-=</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">Q2</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">soil_layers</span><span class="o">.</span><span class="n">Q2</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+            <span class="n">soil_layers</span><span class="o">.</span><span class="n">Qall</span> <span class="o">=</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">Q0</span> <span class="o">+</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">Q1</span> <span class="o">+</span> <span class="n">soil_layers</span><span class="o">.</span><span class="n">Q2</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_runoff</span><span class="p">(</span><span class="n">soil_layers</span><span class="p">)</span>
+            <span class="n">soils</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">stw1</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">],</span> <span class="n">soil_layers</span><span class="p">))</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">soils</span> <span class="o">=</span> <span class="n">soils</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">soils</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;soils.pickled&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="nf">_calculate_runoff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">soil_layer</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        :param i:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">u</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">p_base</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">            :type p_base: scalar with base time of unit hydrograph</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="o">-</span> <span class="p">((</span><span class="n">p_base</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">p_base</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">j</span> <span class="o">-</span> <span class="n">p_base</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span>
+                    <span class="mi">2</span> <span class="o">*</span> <span class="n">j</span> <span class="o">-</span> <span class="n">p_base</span><span class="p">)</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">p_base</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">p_base</span> <span class="o">^</span> <span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">runoff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">soil_layer</span><span class="o">.</span><span class="n">_runoff</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">runoff</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">soil_layer</span><span class="o">.</span><span class="n">uh_base</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">soil_layer</span><span class="o">.</span><span class="n">Qall</span>
+        <span class="n">delta_runoff</span> <span class="o">=</span> <span class="p">[</span><span class="n">q</span><span class="o">*</span><span class="n">u</span><span class="p">(</span><span class="n">k</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">base</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">base</span><span class="p">)]</span>
+        <span class="n">soil_layer</span><span class="o">.</span><span class="n">_runoff</span> <span class="o">=</span> <span class="n">runoff</span> <span class="o">+</span> <span class="n">delta_runoff</span>
+
+<div class="viewcode-block" id="HBV.pickle_current_states"><a class="viewcode-back" href="../../hydroengine.html#hydroengine.rrmodels.HBV.pickle_current_states">[docs]</a>    <span class="k">def</span> <span class="nf">pickle_current_states</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="c1"># save surface states</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sm</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;sm.pickled&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">))</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">swe</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;swe.pickled&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">))</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pond</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;pond.pickled&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">))</span>
+
+        <span class="c1"># save soil states</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">soils</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;soils.pickled&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">))</span></div>
+
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">runoff</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">runoff</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">soils</span><span class="p">]</span>
+
+<div class="viewcode-block" id="HBV.run_time_step"><a class="viewcode-back" href="../../hydroengine.html#hydroengine.rrmodels.HBV.run_time_step">[docs]</a>    <span class="k">def</span> <span class="nf">run_time_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">incid_precip</span><span class="p">,</span> <span class="n">t_max</span><span class="p">,</span> <span class="n">t_min</span><span class="p">,</span> <span class="n">pot_et</span><span class="p">,</span> <span class="n">shp_wtshds</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stats</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">snow_pack</span><span class="p">(</span><span class="n">incid_precip</span><span class="p">,</span> <span class="n">t_max</span><span class="p">,</span> <span class="n">t_min</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">soil_processes</span><span class="p">(</span><span class="n">pot_et</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">precipitation_excess</span><span class="p">(</span><span class="n">shp_wtshds</span><span class="p">,</span> <span class="n">affine</span><span class="p">,</span> <span class="n">stats</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">runoff</span></div></div>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">hydroengine  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.4.
+    </div>
+  </body>
+</html>

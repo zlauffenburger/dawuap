@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>hydroengine &#8212; hydroengine  documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">hydroengine  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for hydroengine</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="Routing"><a class="viewcode-back" href="../hydroengine.html#hydroengine.Routing">[docs]</a><span class="k">class</span> <span class="nc">Routing</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A rainfall-runoff model for water management and decision support system</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Cass hydro.</span>
+
+<span class="sd">        :args:</span>
+<span class="sd">            :param conn: nxn connectivity matrix</span>
+<span class="sd">            :param dt: time step (scalar).</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span> <span class="o">=</span> <span class="n">conn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="n">dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">conn</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Routing.muskingum_routing"><a class="viewcode-back" href="../hydroengine.html#hydroengine.Routing.muskingum_routing">[docs]</a>    <span class="k">def</span> <span class="nf">muskingum_routing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Qt</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">qnew</span><span class="p">,</span> <span class="n">qold</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Routes water through a network graph using the Muskingum-Cunge method.</span>
+
+<span class="sd">        This function takes an initial distribution of streamflows at nodes</span>
+<span class="sd">        in the network and routes them one time step.</span>
+
+<span class="sd">        :args:</span>
+<span class="sd">            :param Qt: vector of streamflows at time t</span>
+<span class="sd">            :param K: vector of reach storage parameters of size n.</span>
+<span class="sd">            :param e: vector of balances between inflows and outflows</span>
+<span class="sd">            :param q: vector of lateral inflows</span>
+
+<span class="sd">        :return: vector of size n with streamflows at time t+1.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Add here code to check the stability of the M-C algorithm</span>
+        <span class="c1"># Only the upper bound this condition is necessary for stability,</span>
+        <span class="c1"># to lower bound for dt is to avoid possible negative flows</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span>
+        <span class="n">max_stab</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">K</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">e</span><span class="p">)</span>
+        <span class="n">min_stab</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">K</span> <span class="o">*</span> <span class="n">e</span>  <span class="c1"># implementation of this condition may require that K is halved</span>
+
+        <span class="c1"># Adjust dt to maintain stability of Muskingum solution</span>
+        <span class="c1"># The algorithm halves the time step until it meets the criterium for all reaches</span>
+        <span class="c1"># so the shortest/fastest reach will control the integration time step</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># maintains the number of fractions that need ot be computed to simulate the full day</span>
+        <span class="k">while</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">greater</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span> <span class="n">max_stab</span><span class="p">)):</span>
+            <span class="n">dt</span> <span class="o">/=</span> <span class="mi">2</span>
+            <span class="n">n</span> <span class="o">*=</span> <span class="mi">2</span>
+
+        <span class="c1"># adjust Q and q to the reduced dt</span>
+        <span class="n">Qt</span> <span class="o">=</span> <span class="n">Qt</span><span class="o">/</span><span class="n">n</span>
+        <span class="n">qnew</span> <span class="o">=</span> <span class="n">qnew</span><span class="o">/</span><span class="n">n</span>
+        <span class="n">qold</span> <span class="o">=</span> <span class="n">qold</span><span class="o">/</span><span class="n">n</span>
+
+        <span class="c1"># while np.any(np.greater(min_stab, self.dt)):</span>
+        <span class="c1">#     K = K/2 # assuming K = dx/c</span>
+        <span class="c1">#     # e = do something about e here, which is also a function of dx</span>
+        <span class="c1">#     n *= 2</span>
+        <span class="c1">#     min_stab = 2 * K * e</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+
+            <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">K</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="p">)</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">)</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">K</span> <span class="o">*</span> <span class="n">e</span> <span class="o">-</span> <span class="n">dt</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">)</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">K</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">e</span><span class="p">)</span> <span class="o">-</span> <span class="n">dt</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">)</span>
+            <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">K</span> <span class="o">*</span> <span class="n">e</span> <span class="o">+</span> <span class="n">dt</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">)</span>
+
+            <span class="n">lhs</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">rhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">((</span><span class="n">d</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="p">,</span> <span class="n">c</span><span class="p">))</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">Qt</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">*</span><span class="n">qnew</span><span class="c1">#+ np.diag(d)*qold - np.diag(b)*qnew</span>
+
+           <span class="c1"># print lhs</span>
+           <span class="c1"># print rhs</span>
+
+            <span class="n">Qt1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">rhs</span><span class="p">)</span>
+            <span class="n">Qt</span> <span class="o">=</span> <span class="n">Qt1</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">lhs</span><span class="p">,</span> <span class="n">Qt1</span><span class="p">),</span> <span class="n">rhs</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">Qt1</span></div></div>
+
+
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">hydroengine  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.4.
+    </div>
+  </body>
+</html>

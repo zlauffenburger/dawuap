@@ -1,0 +1,456 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>utils.utilsVector &#8212; hydroengine  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">hydroengine  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for utils.utilsVector</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;Classes to manipulate vector datasets used in daWUAP.</span>
+
+<span class="sd">The ReadVector base class reads and writes fiona geometry objects. This class is inherited by</span>
+<span class="sd">the other three classes in this module.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="c1">#import numpy as np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="c1">#import shapefile as shp</span>
+<span class="kn">import</span> <span class="nn">fiona</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="k">import</span> <span class="n">mapping</span><span class="p">,</span> <span class="n">shape</span>
+
+
+<div class="viewcode-block" id="ReadVector"><a class="viewcode-back" href="../../utils.html#utils.utilsVector.ReadVector">[docs]</a><span class="k">class</span> <span class="nc">ReadVector</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Base class to read vector datasets using Fiona.</span>
+
+<span class="sd">    Reads and stores metadata from fiona objects, and facilitates the writing of vector files.</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn_vector</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The constructors requires a path to a file such as &#39;data/map_spain.shp&#39;.</span>
+
+<span class="sd">        An internal call to the protected ``_read_fiona_object()`` method opens the file and</span>
+<span class="sd">        populates the metadata variables.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn_vector</span> <span class="o">=</span> <span class="n">fn_vector</span>
+        <span class="c1"># Next three variables are updated after the call to _read_fiona_object()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">schema</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">driver</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_fiona_object</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_read_fiona_object</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns an iterator over records in the vector file&quot;&quot;&quot;</span>
+        <span class="c1"># test it as fiona data source</span>
+        <span class="n">features_iter</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">fiona</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fn_vector</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">src</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">crs</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">crs</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">schema</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">driver</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">driver</span>
+
+            <span class="k">def</span> <span class="nf">fiona_generator</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                <span class="k">with</span> <span class="n">fiona</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">src2</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">src2</span><span class="p">:</span>
+                        <span class="k">yield</span> <span class="n">feature</span>
+
+            <span class="n">features_iter</span> <span class="o">=</span> <span class="n">fiona_generator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fn_vector</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AssertionError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">,</span> <span class="ne">IOError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">):</span>
+            <span class="nb">print</span> <span class="s2">&quot;fn_vector does not point to a fiona object, error &quot;</span>
+
+        <span class="k">return</span> <span class="n">features_iter</span>
+
+    <span class="k">def</span> <span class="nf">_write_fiona_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Writes a vector file using fn_vector as template.</span>
+
+<span class="sd">        Returns nothing.</span>
+
+
+<span class="sd">        :param fn: output file name</span>
+<span class="sd">        :param crs:</span>
+<span class="sd">        :param driver:</span>
+<span class="sd">        :param schema:</span>
+<span class="sd">        :param params: dictionary</span>
+<span class="sd">        :type fn: str</span>
+<span class="sd">        :type driver: str</span>
+<span class="sd">        :type schema: str</span>
+<span class="sd">        :type params: dict</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        :rtype: None</span>
+
+<span class="sd">        .. todo:: Solve problem writing projection info in shp and geojson. Also overwriting geojson files</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">crs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">crs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">crs</span>
+        <span class="k">if</span> <span class="n">driver</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">driver</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">driver</span>
+        <span class="k">if</span> <span class="n">schema</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">schema</span>
+
+        <span class="c1"># TODO: solve problems writing projection information in shapefiles and geojson</span>
+        <span class="n">feature_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_fiona_object</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">fiona</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="n">driver</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span> <span class="k">as</span> <span class="n">sink</span><span class="p">:</span>
+
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">feats</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">feature_iter</span><span class="p">):</span>
+                <span class="n">geom</span> <span class="o">=</span> <span class="n">shape</span><span class="p">(</span><span class="n">feats</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">props</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s1">&#39;properties&#39;</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">props</span> <span class="o">=</span> <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">]</span>
+                <span class="n">sink</span><span class="o">.</span><span class="n">write</span><span class="p">({</span><span class="s1">&#39;properties&#39;</span><span class="p">:</span> <span class="n">props</span><span class="p">,</span> <span class="s1">&#39;geometry&#39;</span><span class="p">:</span> <span class="n">mapping</span><span class="p">(</span><span class="n">geom</span><span class="p">)})</span></div>
+
+
+<div class="viewcode-block" id="ParseNetwork"><a class="viewcode-back" href="../../utils.html#utils.utilsVector.ParseNetwork">[docs]</a><span class="k">class</span> <span class="nc">ParseNetwork</span><span class="p">(</span><span class="n">ReadVector</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a dataframe.</span>
+
+<span class="sd">    Class to parse the model stream network. It calculates the connectivity matrix</span>
+<span class="sd">    during the initialization and makes it available as a class variable.</span>
+<span class="sd">    This class has the following public methods:</span>
+
+<span class="sd">    - get_parameter(param): returns a list with the value of this parameter for all river reaches</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn_vector</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ParseNetwork</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">fn_vector</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn_matrix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc_connectivity_matrix</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_calc_connectivity_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">feature_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_fiona_object</span><span class="p">()</span>
+
+        <span class="n">lst_node_connections</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">feats</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">feature_iter</span><span class="p">):</span>
+            <span class="n">geom</span> <span class="o">=</span> <span class="n">shape</span><span class="p">(</span><span class="n">feats</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">])</span>
+            <span class="n">props</span> <span class="o">=</span> <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">]</span>
+            <span class="n">lst_node_connections</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">props</span><span class="p">[</span><span class="s2">&quot;FROM_NODE&quot;</span><span class="p">],</span> <span class="n">props</span><span class="p">[</span><span class="s2">&quot;TO_NODE&quot;</span><span class="p">]))</span>
+
+        <span class="n">lstNodes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">lst_node_connections</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">lstNodes</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">lstNodes</span><span class="p">)</span>
+        <span class="c1"># drop the connections that go out of the basin to node 0</span>
+        <span class="n">lst_node_connections</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">lst_node_connections</span> <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="n">lst_node_connections</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">link</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">df</span>
+
+<div class="viewcode-block" id="ParseNetwork.get_parameter"><a class="viewcode-back" href="../../utils.html#utils.utilsVector.ParseNetwork.get_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">get_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieves a list of values associated with the :param: parameter</span>
+<span class="sd">        :param param: string with name of the parameter to retrieve</span>
+<span class="sd">        :return: list of parameter values in the order they appear in the river network dictionary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">feature_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_fiona_object</span><span class="p">()</span>
+
+        <span class="n">lst_param</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">feats</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">feature_iter</span><span class="p">):</span>
+            <span class="n">lst_param</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="n">param</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">lst_param</span></div></div>
+
+
+<div class="viewcode-block" id="VectorParameterIO"><a class="viewcode-back" href="../../utils.html#utils.utilsVector.VectorParameterIO">[docs]</a><span class="k">class</span> <span class="nc">VectorParameterIO</span><span class="p">(</span><span class="n">ReadVector</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class to provide model parameter fields adn values to network and basin vector datasets.</span>
+<span class="sd">    It has the following public methods:</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn_vector</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the object with a polygon (basin) or multiline (network) vector dataset</span>
+<span class="sd">        :param fn_vector: fn of vector dataset</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">VectorParameterIO</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">fn_vector</span><span class="p">)</span>
+
+<div class="viewcode-block" id="VectorParameterIO.read_features"><a class="viewcode-back" href="../../utils.html#utils.utilsVector.VectorParameterIO.read_features">[docs]</a>    <span class="k">def</span> <span class="nf">read_features</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        return a generator of features in the dataset</span>
+<span class="sd">        :return: fiona generator</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_fiona_object</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="VectorParameterIO.write_dataset"><a class="viewcode-back" href="../../utils.html#utils.utilsVector.VectorParameterIO.write_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">write_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Writes a vector file using fn_vector as template</span>
+<span class="sd">        :param fn: outfile name</span>
+<span class="sd">        :param crs:</span>
+<span class="sd">        :param driver:</span>
+<span class="sd">        :param schema:</span>
+<span class="sd">        :param params: dictionary</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_fiona_object</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">crs</span><span class="p">,</span> <span class="n">driver</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ModelVectorDatasets"><a class="viewcode-back" href="../../utils.html#utils.utilsVector.ModelVectorDatasets">[docs]</a><span class="k">class</span> <span class="nc">ModelVectorDatasets</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class to handle the the manipulation of all vector dataset in the model</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn_network</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fn_subsheds</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">fn_network</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">network</span> <span class="o">=</span> <span class="n">VectorParameterIO</span><span class="p">(</span><span class="n">fn_network</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fn_subsheds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">subsheds</span> <span class="o">=</span> <span class="n">VectorParameterIO</span><span class="p">(</span><span class="n">fn_subsheds</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ModelVectorDatasets.write_muskingum_parameters"><a class="viewcode-back" href="../../utils.html#utils.utilsVector.ModelVectorDatasets.write_muskingum_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">write_muskingum_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outfn</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># type: (str, list) -&gt; None</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds or updates the vector network file with the Muskingum-Cunge</span>
+<span class="sd">        parameters. If params is not provided, the dataset is updated with default parameter</span>
+<span class="sd">        values.</span>
+
+<span class="sd">        :param outfn: filename for updated vector network</span>
+<span class="sd">        :param params: list of parameter dictionaries with format [{&#39;ARCID&#39;: ID, &#39;e&#39;: value, &#39;ks&#39;: value},{}]</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if network dataset is present</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Object does not contain a network dataset&quot;</span><span class="p">)</span>
+
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;e&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;float&#39;</span>
+        <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;ks&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;float&#39;</span>
+
+        <span class="n">lstDicts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">feature_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">read_features</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">feats</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">feature_iter</span><span class="p">):</span>
+            <span class="n">arc_id</span> <span class="o">=</span> <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;ARCID&#39;</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="p">(</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">params</span> <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;ARCID&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">arc_id</span><span class="p">)</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;e&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">)</span>
+            <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;ks&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ks&#39;</span><span class="p">,</span> <span class="mi">82400</span><span class="p">)</span>
+            <span class="n">lstDicts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feats</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">write_dataset</span><span class="p">(</span><span class="n">outfn</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">lstDicts</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ModelVectorDatasets.write_hvb_parameters"><a class="viewcode-back" href="../../utils.html#utils.utilsVector.ModelVectorDatasets.write_hvb_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">write_hvb_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outfn</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># type: (str, list) -&gt; None</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds or updates the vector file of model subwatersheds with the hbv RR model parameters.</span>
+<span class="sd">        If params is not provided, the dataset is updatd with default parameter values</span>
+
+<span class="sd">        :param outfn: filename for updated vector network</span>
+<span class="sd">        :param params: list of parameter dictionaries with format [{&#39;ARCID&#39;: ID, &#39;e&#39;: value, &#39;ks&#39;: value},{}]</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsheds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Object &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span> <span class="o">+</span> <span class="s2">&quot; does not contain a catchment dataset&quot;</span><span class="p">)</span>
+
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsheds</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;hbv_ck0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;float&#39;</span>
+        <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;hbv_ck1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;float&#39;</span>
+        <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;hbv_ck2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;float&#39;</span>
+        <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;hbv_hl1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;float&#39;</span>
+        <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;hbv_perc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;float&#39;</span>
+        <span class="n">schema</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;hbv_pbase&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;int&#39;</span>
+
+        <span class="n">lstDicts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">feature_iter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subsheds</span><span class="o">.</span><span class="n">read_features</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">feats</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">feature_iter</span><span class="p">):</span>
+            <span class="n">arc_id</span> <span class="o">=</span> <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;GRIDCODE&#39;</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="p">(</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">params</span> <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s1">&#39;GRIDCODE&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">arc_id</span><span class="p">)</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;hbv_ck0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hbv_ck0&#39;</span><span class="p">,</span> <span class="mf">10.</span><span class="p">)</span>
+            <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;hbv_ck1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hbv_ck1&#39;</span><span class="p">,</span> <span class="mf">50.</span><span class="p">)</span>
+            <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;hbv_ck2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hbv_ck2&#39;</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
+            <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;hbv_hl1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hbv_hl1&#39;</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+            <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;hbv_perc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hbv_perc&#39;</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+            <span class="n">feats</span><span class="p">[</span><span class="s1">&#39;properties&#39;</span><span class="p">][</span><span class="s1">&#39;hbv_pbase&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;hbv_pbase&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+            <span class="n">lstDicts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feats</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">subsheds</span><span class="o">.</span><span class="n">write_dataset</span><span class="p">(</span><span class="n">outfn</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">lstDicts</span><span class="p">)</span></div></div>
+
+
+
+
+
+<span class="c1"># def add_muskingum_model_parameters_to_network(vectorNetwork, outshp=&#39;&#39;):</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     Add default muskingum cunge parameters to streamflow network</span>
+<span class="c1">#     :param vectorNetwork:</span>
+<span class="c1">#     :param outshp:</span>
+<span class="c1">#     :return:</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#</span>
+<span class="c1">#     def _read_features(inFile):</span>
+<span class="c1">#         # test it as fiona data source</span>
+<span class="c1">#         features_iter = None</span>
+<span class="c1">#         try:</span>
+<span class="c1">#             with fiona.open(inFile, &#39;r&#39;) as src:</span>
+<span class="c1">#                 assert len(src) &gt; 0</span>
+<span class="c1">#</span>
+<span class="c1">#             def fiona_generator(obj):</span>
+<span class="c1">#                 with fiona.open(obj, &#39;r&#39;) as src:</span>
+<span class="c1">#                     for feature in src:</span>
+<span class="c1">#                         yield feature</span>
+<span class="c1">#</span>
+<span class="c1">#             features_iter = fiona_generator(inFile)</span>
+<span class="c1">#</span>
+<span class="c1">#         except (AssertionError, TypeError, IOError, OSError):</span>
+<span class="c1">#             print &quot;fn_vector does not point to a fiona object, error &quot;</span>
+<span class="c1">#</span>
+<span class="c1">#         return features_iter</span>
+<span class="c1">#</span>
+<span class="c1">#     feature_iter = _read_features(vectorNetwork)</span>
+<span class="c1">#     lst_node_connections = []</span>
+<span class="c1">#</span>
+<span class="c1">#     for i, feats in enumerate(feature_iter):</span>
+<span class="c1">#         geom = shape(feats[&#39;geometry&#39;])</span>
+<span class="c1">#         props = feats[&#39;properties&#39;]</span>
+<span class="c1">#         lst_node_connections.append((props[&quot;FROM_NODE&quot;], props[&quot;TO_NODE&quot;]))</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="c1"># def add_rr_model_parameters_to_shapefile(shapefile, outshp=&#39;&#39;):</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     Add default field and parameter values to shapefile. A bug in the pyShp library</span>
+<span class="c1">#     handles incorrectly Date fields. If date fields are contained in the shapefile</span>
+<span class="c1">#     the library needs to be patched including the follwing lines in shapefile.py:</span>
+<span class="c1">#</span>
+<span class="c1">#     from datetime import date</span>
+<span class="c1">#     comment out line 525 and replace by:</span>
+<span class="c1">#      value = date(y,m,d).strftime(&#39;%Y%m%d&#39;)</span>
+<span class="c1">#     :param shapefile: Polygon (catchment) shapefile to which parameter fields will be added</span>
+<span class="c1">#     :param outshp: optional, output shapefile filename. Overwrite original if empy</span>
+<span class="c1">#     :return: None</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     r = shp.Reader(shapefile)</span>
+<span class="c1">#     w = shp.Writer(r.shapeType)</span>
+<span class="c1">#     w.autoBalance = 1</span>
+<span class="c1">#</span>
+<span class="c1">#     w.fields = list(r.fields)</span>
+<span class="c1">#     #w.records.extend(r.records())</span>
+<span class="c1">#     w._shapes.extend(r.shapes())</span>
+<span class="c1">#</span>
+<span class="c1">#     fldnames = [fld[0] for fld in w.fields]</span>
+<span class="c1">#</span>
+<span class="c1">#     if &#39;hbv_ck0&#39; not in fldnames:</span>
+<span class="c1">#         w.field(&#39;hbv_ck0&#39;, &#39;N&#39;, 10, 6)</span>
+<span class="c1">#     if &#39;hbv_ck1&#39; not in fldnames:</span>
+<span class="c1">#         w.field(&#39;hbv_ck1&#39;, &#39;N&#39;, 10, 6)</span>
+<span class="c1">#     if &#39;hbv_ck2&#39; not in fldnames:</span>
+<span class="c1">#         w.field(&#39;hbv_ck2&#39;, &#39;N&#39;, 10, 6)</span>
+<span class="c1">#     if &#39;hbv_hl1&#39; not in fldnames:</span>
+<span class="c1">#         w.field(&#39;hbv_hl1&#39;, &#39;N&#39;, 10, 6)</span>
+<span class="c1">#     if &#39;hbv_perc&#39; not in fldnames:</span>
+<span class="c1">#         w.field(&#39;hbv_perc&#39;, &#39;N&#39;, 10, 6)</span>
+<span class="c1">#     if &#39;hbv_pbase&#39; not in fldnames:</span>
+<span class="c1">#         w.field(&#39;hbv_pbase&#39;, &#39;N&#39;, 10, 0)</span>
+<span class="c1">#</span>
+<span class="c1">#     counter = 1</span>
+<span class="c1">#     for ca in r.records():</span>
+<span class="c1">#         print &quot;Appending parameter to record &quot;, counter</span>
+<span class="c1">#         ca.append(10.0)</span>
+<span class="c1">#         ca.append(50.0)</span>
+<span class="c1">#         ca.append(10000.0)</span>
+<span class="c1">#         ca.append(50.0)</span>
+<span class="c1">#         ca.append(50.0)</span>
+<span class="c1">#         ca.append(5)</span>
+<span class="c1">#         w.records.append(ca)</span>
+<span class="c1">#         counter += 1</span>
+<span class="c1">#</span>
+<span class="c1">#     #w.records.append((&#39;hbv_ck0&#39;, &#39;1.0&#39;))</span>
+<span class="c1">#     if not outshp:</span>
+<span class="c1">#         outshp=shapefile</span>
+<span class="c1">#</span>
+<span class="c1">#     w.save(outshp)</span>
+<span class="c1">#     r = w = None</span>
+<span class="c1">#</span>
+<span class="c1"># #add_rr_model_parameters_to_shapefile(&#39;test_data/HUC8_NetworkLite.shp&#39;)</span>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">hydroengine  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.4.
+    </div>
+  </body>
+</html>

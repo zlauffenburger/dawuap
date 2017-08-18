@@ -1,0 +1,222 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>utils.utilsRaster &#8212; hydroengine  documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">hydroengine  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for utils.utilsRaster</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">division</span>
+<span class="kn">import</span> <span class="nn">rasterio</span> <span class="k">as</span> <span class="nn">rio</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+
+<div class="viewcode-block" id="ReadRaster"><a class="viewcode-back" href="../../utils.html#utils.utilsRaster.ReadRaster">[docs]</a><span class="k">class</span> <span class="nc">ReadRaster</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class to read raster datasets, retrieve and keep metadata, and write geotiffs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn_base_raster</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn_base_raster</span> <span class="o">=</span> <span class="n">fn_base_raster</span>
+        <span class="c1"># profile and shape are updated with call to _read_base_raster()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profile</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">affine</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">array</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_read_base_raster</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_read_base_raster</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">rio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fn_base_raster</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">profile</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">profile</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">shape</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">affine</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">affine</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">array</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_write_array_to_geotiff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn_out</span><span class="p">,</span> <span class="n">np_array</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function to write numpy arrays as tiff file using metadata from a template GeoTiff map.</span>
+
+<span class="sd">        :param fn: filename of output tiff file, string</span>
+<span class="sd">        :param array: numpy array to be converted to tiff</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">np_array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np_array</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Shape mismatch!. Template shape is </span><span class="si">%s</span><span class="s2">. Arrays shape is </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">src</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">driver</span><span class="o">=</span><span class="s1">&#39;GTiff&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float64&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">rio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">fn_out</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="p">)</span> <span class="k">as</span> <span class="n">dst</span><span class="p">:</span>
+            <span class="n">dst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">np_array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float64&#39;</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RasterParameterIO"><a class="viewcode-back" href="../../utils.html#utils.utilsRaster.RasterParameterIO">[docs]</a><span class="k">class</span> <span class="nc">RasterParameterIO</span><span class="p">(</span><span class="n">ReadRaster</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class to manipulate raster model parameters</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn_base_raster</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">RasterParameterIO</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">fn_base_raster</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RasterParameterIO.write_array_to_geotiff"><a class="viewcode-back" href="../../utils.html#utils.utilsRaster.RasterParameterIO.write_array_to_geotiff">[docs]</a>    <span class="k">def</span> <span class="nf">write_array_to_geotiff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn_out</span><span class="p">,</span> <span class="n">np_array</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Wrapper of function defined in parent class to write numpy arrays</span>
+<span class="sd">             as tiff file using metadata from a template GeoTiff map.</span>
+
+<span class="sd">            :param fn_out: filename of output tiff file, string</span>
+<span class="sd">            :param np_array: numpy array to be converted to tiff</span>
+<span class="sd">            :return: None</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_array_to_geotiff</span><span class="p">(</span><span class="n">fn_out</span><span class="p">,</span> <span class="n">np_array</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="ModelRasterDatasetHBV"><a class="viewcode-back" href="../../utils.html#utils.utilsRaster.ModelRasterDatasetHBV">[docs]</a><span class="k">class</span> <span class="nc">ModelRasterDatasetHBV</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">fn_base_map</span><span class="p">,</span>
+                 <span class="n">fn_temp_thres</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">fn_ddf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">fn_soil_max_wat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">fn_soil_beta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">fn_aet_lp_param</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a class to write raster parameters for the HBV model. A base map, typically</span>
+<span class="sd">        a climate input map, is required to obtain the geometry of the domain.</span>
+<span class="sd">        Optional parameter maps can be used to initialize the object to specified parameter values.</span>
+<span class="sd">        If the maps do not exist it initializes the maps with a default value</span>
+
+<span class="sd">        :param fn_base_map: filename to map to obtain the geometry and projection of the domain</span>
+<span class="sd">        :param fn_temp_thres: filename to map with snow-rain temperature threshold</span>
+<span class="sd">        :param fn_ddf: filename to map with degree-day factor</span>
+<span class="sd">        :param fn_soil_max_wat: filename to map with soil maximum storage parameter</span>
+<span class="sd">        :param fn_soil_beta: filename to map with</span>
+<span class="sd">        :param fn_aet_lp_param:</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn_base_map</span> <span class="o">=</span> <span class="n">fn_base_map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn_temp_thres</span> <span class="o">=</span> <span class="n">fn_temp_thres</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn_ddf</span> <span class="o">=</span> <span class="n">fn_ddf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn_soil_max_wat</span> <span class="o">=</span> <span class="n">fn_soil_max_wat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn_soil_beta</span> <span class="o">=</span> <span class="n">fn_soil_beta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn_aet_lp_param</span> <span class="o">=</span> <span class="n">fn_aet_lp_param</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_map</span> <span class="o">=</span> <span class="n">RasterParameterIO</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fn_base_map</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ModelRasterDatasetHBV.write_parameter_input_file"><a class="viewcode-back" href="../../utils.html#utils.utilsRaster.ModelRasterDatasetHBV.write_parameter_input_file">[docs]</a>    <span class="k">def</span> <span class="nf">write_parameter_input_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn_out</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Writes a json dictionary with the parameter name keys and the path to files</span>
+<span class="sd">        holding the parameter map. This file is needed to run the hydrovehicle</span>
+<span class="sd">        :param fn_out: filename to write the json dictionary</span>
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filenamedic</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;pp_temp_thres&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn_temp_thres</span><span class="p">,</span>
+            <span class="s1">&#39;ddf&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn_ddf</span><span class="p">,</span>
+            <span class="s1">&#39;soil_max_wat&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn_soil_max_wat</span><span class="p">,</span>
+            <span class="s1">&#39;soil_beta&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn_soil_beta</span><span class="p">,</span>
+            <span class="s1">&#39;aet_lp_param&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn_aet_lp_param</span>
+        <span class="p">}</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fn_out</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filenamedic</span><span class="p">,</span> <span class="n">src</span><span class="p">)</span></div></div>
+
+
+
+
+
+<div class="viewcode-block" id="write_structured_parameter_array"><a class="viewcode-back" href="../../utils.html#utils.utilsRaster.write_structured_parameter_array">[docs]</a><span class="k">def</span> <span class="nf">write_structured_parameter_array</span><span class="p">(</span><span class="n">filenames</span><span class="p">,</span> <span class="n">shape</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Utility to write a json dictionary with HBV model raster parameters.</span>
+<span class="sd">    The GeoTiff files must exist</span>
+
+<span class="sd">    :param filenames:</span>
+<span class="sd">    :param shape:</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tp</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="n">filenames</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="p">[</span><span class="s1">&#39;float32&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">filenames</span><span class="p">))],</span> <span class="p">[</span><span class="n">shape</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">filenames</span><span class="p">))])</span>
+    <span class="n">pars</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">filenames</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">tp</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">items</span> <span class="ow">in</span> <span class="n">filenames</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">with</span> <span class="n">rio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">:</span>
+            <span class="n">pars</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">read</span><span class="p">()</span></div>
+
+    <span class="c1">#np.zeros(filenames.items(), dtype=[(&#39;&#39;, &#39;&#39;, )])</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">hydroengine  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Author.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.4.
+    </div>
+  </body>
+</html>
