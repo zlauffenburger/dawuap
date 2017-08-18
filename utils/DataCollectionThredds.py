@@ -124,9 +124,9 @@ if __name__ == "__main__":
                         dest='base_url', type=str,
                         help='base url of NetCDF data source. '
                              'Defaults to the Aggregated NKN Thredds server')
-    parser.add_argument('-de', dest='date_end', type=str, help='date end', required=True)
-    parser.add_argument('-ds', dest='date_start', type=str, help='date start', required=True)
-    parser.add_argument('-a', dest='attributes', nargs='+', help='variables', required=True)
+    parser.add_argument('-de', dest='date_end', type=str, help='date end yyy-mm-dd', required=True)
+    parser.add_argument('-ds', dest='date_start', type=str, help='date start yyy-mm-dd', required=True)
+    parser.add_argument('-a', dest='attributes', nargs='+', help='variables: precip, tempmax or tempmin', required=True)
     parser.add_argument('-of', default='./', dest='output_folder', type=str,
                         help='output folder. Defaults to current folder')
     parser.add_argument('--flip', dest='flip', action='store_true',

@@ -10,9 +10,9 @@ config = {
         'download_url': 'https://bitbucket.org/umthydromodeling/dawuaphydroengine/get/a88ac8f68b01.zip',
         'author_email': 'marco.maneta@umontana.edu',
         'version': '0.1',
-        'install_requires': ['numpy', 'nose', 'rasterstats', 'rasterio', 'fiona', 'shapely'],
+        'install_requires': ['numpy', 'nose', 'rasterstats', 'rasterio', 'fiona', 'shapely', 'cdo'],
         'packages': ['hydroengine', 'utils', 'hydrovehicle'],
-        'scripts': ['bin/hydrovehicle', 'bin/dataCollectionThredds', 'bin/writeRainfallRunoffModelParameters'],
+        'scripts': ['bin/hydrovehicle.py', 'bin/dataCollectionThredds.py', 'bin/writeRainfallRunoffModelParameters.py'],
         'name': 'daWUAP'
 }
 
