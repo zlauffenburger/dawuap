@@ -189,6 +189,9 @@ class ModelVectorDatasets(object):
     """
     def __init__(self, fn_network=None, fn_subsheds=None):
 
+        self.network = None
+        self.subsheds = None
+
         if fn_network is not None:
             self.network = VectorParameterIO(fn_network)
         if fn_subsheds is not None:
@@ -207,7 +210,7 @@ class ModelVectorDatasets(object):
         """
         # Check if network dataset is present
         if self.network is None:
-            raise ValueError("Object does not contain a network dataset")
+            return
 
         schema = self.network.schema.copy()
         schema['properties']['e'] = 'float'
@@ -238,7 +241,7 @@ class ModelVectorDatasets(object):
         :return: None
         """
         if self.subsheds is None:
-            raise ValueError("Object " + self.__class__ + " does not contain a catchment dataset")
+            return
 
         schema = self.subsheds.schema.copy()
         schema['properties']['hbv_ck0'] = 'float'

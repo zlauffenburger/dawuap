@@ -89,6 +89,7 @@ class TestParameterIO(object):
         a._write_fiona_object(outfile)
         assert filecmp.cmp(outfile, a.fn_vector, shallow=False)
 
+
 class TestModelVectorDatasets(object):
     @classmethod
     def setup_class(cls):
@@ -121,6 +122,11 @@ class TestModelVectorDatasets(object):
 
         a = utils.ModelVectorDatasets(fn_network=self.network_shp)
         a.write_muskingum_parameters(outfile, params)
+        # check if the parameters are in the output files
+        with fiona.open(outfile, 'r') as src:
+            for item in src:
+                prop = item['properties']
+                nose.tools.assert_almost_equals(prop['e'], 0.4)
 
     def test_write_muskingum_parameters_geojson(self):
         outfile = r'../tests/test_data/mt_network_par.geojson'
@@ -136,12 +142,22 @@ class TestModelVectorDatasets(object):
 
         a = utils.ModelVectorDatasets(fn_network=self.network_geojson)
         a.write_muskingum_parameters(outfile, params)
+        # check if the parameters are in the output files
+        with fiona.open(outfile, 'r') as src:
+            for item in src:
+                prop = item['properties']
+                nose.tools.assert_almost_equals(prop['e'], 0.4)
 
     def test_write_hbv_parameters_shp_default(self):
         outfile = r'../tests/test_data/output2.shp'
         params = []
         a = utils.ModelVectorDatasets(fn_subsheds=self.watsheds_shp)
         a.write_hvb_parameters(outfile, params)
+        #check if the parameters are in the output files
+        with fiona.open(outfile, 'r') as src:
+            for item in src:
+                prop = item['properties']
+                nose.tools.assert_almost_equals(prop['hbv_ck0'], 10)
 
     def test_write_hbv_parameters_shp(self):
         outfile = r'../tests/test_data/output2.shp'
@@ -151,7 +167,7 @@ class TestModelVectorDatasets(object):
             for item in src:
                 prop = item['properties']
                 d = {'GRIDCODE': prop['GRIDCODE'],
-                     'hbv_ck0': 10,
+                     'hbv_ck0': 12,
                      'hbv_ck1': 50,
                      'hbv_ck2': 10000,
                      'hbv_hl1': 50,
@@ -161,13 +177,19 @@ class TestModelVectorDatasets(object):
 
         a = utils.ModelVectorDatasets(fn_subsheds=self.watsheds_shp)
         a.write_hvb_parameters(outfile, params)
+        # check if the parameters are in the output files
+        with fiona.open(outfile, 'r') as src:
+            for item in src:
+                prop = item['properties']
+                nose.tools.assert_almost_equals(prop['hbv_ck0'], 12)
 
-    @nose.tools.raises(Exception)
-    def test_write_hbv_parameters_exception(self):
-        outfile = r'../tests/test_data/output2.shp'
-        params = []
-        a = utils.ModelVectorDatasets(fn_network=self.watsheds_shp)
-        a.write_hvb_parameters(outfile, params)
+
+    # @nose.tools.raises(Exception)
+    # def test_write_hbv_parameters_exception(self):
+    #     outfile = r'../tests/test_data/output2.shp'
+    #     params = []
+    #     a = utils.ModelVectorDatasets(fn_network=self.watsheds_shp)
+    #     a.write_hvb_parameters(outfile, params)
 
 # Test_hbv = np.zeros(6, dtype='3int8, float32, (2,3)float64')
 # Test_hbv = {

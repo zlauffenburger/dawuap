@@ -9,8 +9,11 @@ Usage example
     dataCollectionThredds.py -ds 2012-09-01 -de 2013-08-31 -a tempmax --flip  vectorFile Domain_latlong.shp
     dataCollectionThredds.py -ds 2012-09-01 -de 2013-08-31 -a tempmin --flip  vectorFile Domain_latlong.shp
 
-3. Write default parameters for the HBV model on the basin shapefiles::
+3. Write default parameters for the HBV model and the Muskingum routing model on the basin shapefiles::
 
-    writeRainfallRunoffModelParameters.py subs1.shp subsout.shp
+    writeRainfallRunoffModelParameters.py -subBasinsVectorFile subs1.shp -subBasinOutFile subsout.shp
+     -streamVectorFile riv1.shp -streamOutFile rivout.shp
     
-4. Write default parameters for the Muskingum-Cunge routing model on the stream network shapefile::
+4. Write default parameters for the raster components of the rainfall runoff model::
+
+
