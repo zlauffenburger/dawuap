@@ -147,12 +147,16 @@ class TestModelVectorDatasets(object):
         outfile = r'../tests/test_data/output2.shp'
         params = []
         #  create parameter file for testing
-        with fiona.open(self.network_shp, 'r') as src:
+        with fiona.open(self.watsheds_shp, 'r') as src:
             for item in src:
                 prop = item['properties']
-                d = {'ARCID': prop['ARCID'],
-                     'e': 0.4,
-                     'ks': 86400}
+                d = {'GRIDCODE': prop['GRIDCODE'],
+                     'hbv_ck0': 10,
+                     'hbv_ck1': 50,
+                     'hbv_ck2': 10000,
+                     'hbv_hl1': 50,
+                     'hbv_perc': 50,
+                     'hbv_pbase': 5}
                 params.append(d)
 
         a = utils.ModelVectorDatasets(fn_subsheds=self.watsheds_shp)

@@ -234,7 +234,7 @@ class ModelVectorDatasets(object):
         If params is not provided, the dataset is updatd with default parameter values
 
         :param outfn: filename for updated vector network
-        :param params: list of parameter dictionaries with format [{'ARCID': ID, 'e': value, 'ks': value},{}]
+        :param params: list of parameter dictionaries with format []
         :return: None
         """
         if self.subsheds is None:
