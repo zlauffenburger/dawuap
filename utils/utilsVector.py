@@ -220,6 +220,7 @@ class ModelVectorDatasets(object):
         feature_iter = self.network.read_features()
         for i, feats in enumerate(feature_iter):
             arc_id = feats['properties']['ARCID']
+            print("Processing reach feature id %i" % arc_id)
             try:
                 val = (item for item in params if item['ARCID'] == arc_id).next()
             except:
@@ -255,7 +256,7 @@ class ModelVectorDatasets(object):
         feature_iter = self.subsheds.read_features()
         for i, feats in enumerate(feature_iter):
             arc_id = feats['properties']['GRIDCODE']
-            print("Processing feature id %i" %(arc_id))
+            print("Processing subwatershed feature id %i" %arc_id)
             try:
                 val = (item for item in params if item['GRIDCODE'] == arc_id).next()
             except:
