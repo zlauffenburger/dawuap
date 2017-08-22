@@ -12,7 +12,8 @@ config = {
         'version': '0.1',
         'install_requires': ['numpy', 'nose', 'rasterstats', 'rasterio', 'fiona', 'shapely', 'nco'],
         'packages': ['hydroengine', 'utils', 'hydrovehicle'],
-        'scripts': ['bin/hydrovehicle.py', 'bin/dataCollectionThredds.py', 'bin/writeRainfallRunoffModelParameters.py'],
+        'scripts': ['bin/hydrovehicle.py', 'bin/dataCollectionThredds.py', 'bin/writeVectorModelParameters.py',
+                    'bin/writeRasterModelParameters.py'],
         'name': 'daWUAP'
 }
 

@@ -27,7 +27,7 @@ class ReadRaster(object):
 
     def _write_array_to_geotiff(self, fn_out, np_array):
         """
-        Function to write numpy arrays as tiff file using metadata from a template GeoTiff map.
+        Writes numpy arrays as tiff file using metadata from a template GeoTiff map.
 
         :param fn: filename of output tiff file, string
         :param array: numpy array to be converted to tiff
@@ -48,6 +48,7 @@ class RasterParameterIO(ReadRaster):
         super(RasterParameterIO, self).__init__(fn_base_raster)
 
     def write_array_to_geotiff(self, fn_out, np_array):
+        # type: (object, object) -> object
         """
             Wrapper of function defined in parent class to write numpy arrays
              as tiff file using metadata from a template GeoTiff map.
@@ -113,20 +114,20 @@ class ModelRasterDatasetHBV(object):
 
 
 
-def write_structured_parameter_array(filenames, shape):
-    """
-    Utility to write a json dictionary with HBV model raster parameters.
-    The GeoTiff files must exist
-
-    :param filenames:
-    :param shape:
-    :return:
-    """
-    tp = zip(filenames.keys(), ['float32' for i in range(len(filenames))], [shape for i in range(len(filenames))])
-    pars = np.empty(len(filenames), dtype=tp)
-
-    for name, items in filenames.items():
-        with rio.open(items, 'r') as src:
-            pars[name] = src.read()
+# def write_structured_parameter_array(filenames, shape):
+#     """
+#     Utility to write a json dictionary with HBV model raster parameters.
+#     The GeoTiff files must exist
+#
+#     :param filenames:
+#     :param shape:
+#     :return:
+#     """
+#     tp = zip(filenames.keys(), ['float32' for i in range(len(filenames))], [shape for i in range(len(filenames))])
+#     pars = np.empty(len(filenames), dtype=tp)
+#
+#     for name, items in filenames.items():
+#         with rio.open(items, 'r') as src:
+#             pars[name] = src.read()
 
     #np.zeros(filenames.items(), dtype=[('', '', )])
