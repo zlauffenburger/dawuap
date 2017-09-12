@@ -63,14 +63,14 @@
 <span id="hydroengine-rrmodel-module"></span><h2>hydroengine.RRmodel module<a class="headerlink" href="#module-hydroengine.RRmodel" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="hydroengine.RRmodel.RRmodel">
-<em class="property">class </em><code class="descclassname">hydroengine.RRmodel.</code><code class="descname">RRmodel</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/RRmodel.html#RRmodel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.RRmodel.RRmodel" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">hydroengine.RRmodel.</code><code class="descname">RRmodel</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.RRmodel.RRmodel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>Base class defining the basic interface of rainfall runoff models.</p>
 <p>The actual rainfall runoff models are implemented in a derived class. This class
 must override the runoff() and run_time_step() methods</p>
 <dl class="method">
 <dt id="hydroengine.RRmodel.RRmodel.run_time_step">
-<code class="descname">run_time_step</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/RRmodel.html#RRmodel.run_time_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.RRmodel.RRmodel.run_time_step" title="Permalink to this definition">¶</a></dt>
+<code class="descname">run_time_step</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.RRmodel.RRmodel.run_time_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>Virtual method to be overriden by a derived class.
 Derived class must implement the run_time_step method(). This method must run the
 model forward one time step.</p>
@@ -79,7 +79,7 @@ model forward one time step.</p>
 
 <dl class="method">
 <dt id="hydroengine.RRmodel.RRmodel.runoff">
-<code class="descname">runoff</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/RRmodel.html#RRmodel.runoff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.RRmodel.RRmodel.runoff" title="Permalink to this definition">¶</a></dt>
+<code class="descname">runoff</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.RRmodel.RRmodel.runoff" title="Permalink to this definition">¶</a></dt>
 <dd><p>Virtual method to be overriden by a derived class.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -98,7 +98,7 @@ model forward one time step.</p>
 <span id="hydroengine-aux-models-module"></span><h2>hydroengine.aux_models module<a class="headerlink" href="#module-hydroengine.aux_models" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
 <dt id="hydroengine.aux_models.hamon_pe">
-<code class="descclassname">hydroengine.aux_models.</code><code class="descname">hamon_pe</code><span class="sig-paren">(</span><em>t_avg</em>, <em>latitude</em>, <em>doy</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/aux_models.html#hamon_pe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.aux_models.hamon_pe" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">hydroengine.aux_models.</code><code class="descname">hamon_pe</code><span class="sig-paren">(</span><em>t_avg</em>, <em>latitude</em>, <em>doy</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.aux_models.hamon_pe" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes potential evapotranspiration using the Hamon method, which depends on average temperature,
 daytime length, and saturation vapor pressure</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -124,7 +124,7 @@ daytime length, and saturation vapor pressure</p>
 <span id="hydroengine-hydroengine-module"></span><h2>hydroengine.hydroengine module<a class="headerlink" href="#module-hydroengine.hydroengine" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="hydroengine.hydroengine.Routing">
-<em class="property">class </em><code class="descclassname">hydroengine.hydroengine.</code><code class="descname">Routing</code><span class="sig-paren">(</span><em>conn</em>, <em>dt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/hydroengine.html#Routing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.hydroengine.Routing" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">hydroengine.hydroengine.</code><code class="descname">Routing</code><span class="sig-paren">(</span><em>conn</em>, <em>dt</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.hydroengine.Routing" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <p>A hydrologic engine for a water management and decision support system.</p>
 <p>This is the central class of the hydrologic component. It is initialized with the
@@ -133,7 +133,7 @@ through out the network.</p>
 <p>It uses outputs from the rainfall runoff models as water so</p>
 <dl class="method">
 <dt id="hydroengine.hydroengine.Routing.muskingum_routing">
-<code class="descname">muskingum_routing</code><span class="sig-paren">(</span><em>Qt</em>, <em>K</em>, <em>e</em>, <em>qnew</em>, <em>qold</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/hydroengine.html#Routing.muskingum_routing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.hydroengine.Routing.muskingum_routing" title="Permalink to this definition">¶</a></dt>
+<code class="descname">muskingum_routing</code><span class="sig-paren">(</span><em>Qt</em>, <em>K</em>, <em>e</em>, <em>qnew</em>, <em>qold</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.hydroengine.Routing.muskingum_routing" title="Permalink to this definition">¶</a></dt>
 <dd><p>Routes water through a network graph using the Muskingum-Cunge method.</p>
 <p>This function takes an initial distribution of streamflows at nodes
 in the network and routes them one time step.</p>
@@ -163,22 +163,22 @@ in the network and routes them one time step.</p>
 <span id="hydroengine-rrmodels-module"></span><h2>hydroengine.rrmodels module<a class="headerlink" href="#module-hydroengine.rrmodels" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="hydroengine.rrmodels.HBV">
-<em class="property">class </em><code class="descclassname">hydroengine.rrmodels.</code><code class="descname">HBV</code><span class="sig-paren">(</span><em>dt</em>, <em>swe_o</em>, <em>pond_o</em>, <em>sm_o</em>, <em>soils_o=[]</em>, <em>**params</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/rrmodels.html#HBV"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.rrmodels.HBV" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">hydroengine.rrmodels.</code><code class="descname">HBV</code><span class="sig-paren">(</span><em>dt</em>, <em>swe_o</em>, <em>pond_o</em>, <em>sm_o</em>, <em>soils_o=[]</em>, <em>**params</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#hydroengine.RRmodel.RRmodel" title="hydroengine.RRmodel.RRmodel"><code class="xref py py-class docutils literal"><span class="pre">hydroengine.RRmodel.RRmodel</span></code></a></p>
 <p>Implementation of the classic HVB rainfall-runoff model</p>
 <dl class="method">
 <dt id="hydroengine.rrmodels.HBV.pickle_current_states">
-<code class="descname">pickle_current_states</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/rrmodels.html#HBV.pickle_current_states"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.rrmodels.HBV.pickle_current_states" title="Permalink to this definition">¶</a></dt>
+<code class="descname">pickle_current_states</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV.pickle_current_states" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="hydroengine.rrmodels.HBV.precipitation_excess">
-<code class="descname">precipitation_excess</code><span class="sig-paren">(</span><em>shp_wtshds, affine=None, stats=['mean'], **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/rrmodels.html#HBV.precipitation_excess"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.rrmodels.HBV.precipitation_excess" title="Permalink to this definition">¶</a></dt>
+<code class="descname">precipitation_excess</code><span class="sig-paren">(</span><em>shp_wtshds, affine=None, stats=['mean'], **kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV.precipitation_excess" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="hydroengine.rrmodels.HBV.run_time_step">
-<code class="descname">run_time_step</code><span class="sig-paren">(</span><em>incid_precip, t_max, t_min, pot_et, shp_wtshds, affine=None, stats=['mean'], **kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/rrmodels.html#HBV.run_time_step"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.rrmodels.HBV.run_time_step" title="Permalink to this definition">¶</a></dt>
+<code class="descname">run_time_step</code><span class="sig-paren">(</span><em>incid_precip, t_max, t_min, pot_et, shp_wtshds, affine=None, stats=['mean'], **kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV.run_time_step" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
@@ -188,19 +188,19 @@ in the network and routes them one time step.</p>
 
 <dl class="method">
 <dt id="hydroengine.rrmodels.HBV.snow_pack">
-<code class="descname">snow_pack</code><span class="sig-paren">(</span><em>incid_precip</em>, <em>t_max</em>, <em>t_min</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/rrmodels.html#HBV.snow_pack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.rrmodels.HBV.snow_pack" title="Permalink to this definition">¶</a></dt>
+<code class="descname">snow_pack</code><span class="sig-paren">(</span><em>incid_precip</em>, <em>t_max</em>, <em>t_min</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV.snow_pack" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="hydroengine.rrmodels.HBV.soil_processes">
-<code class="descname">soil_processes</code><span class="sig-paren">(</span><em>pot_et</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/rrmodels.html#HBV.soil_processes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.rrmodels.HBV.soil_processes" title="Permalink to this definition">¶</a></dt>
+<code class="descname">soil_processes</code><span class="sig-paren">(</span><em>pot_et</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV.soil_processes" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="hydroengine.rrmodels.Soil">
-<em class="property">class </em><code class="descclassname">hydroengine.rrmodels.</code><code class="descname">Soil</code><span class="sig-paren">(</span><em>ur=0.0</em>, <em>lr=0.0</em>, <em>q0=0.0</em>, <em>q1=0.0</em>, <em>q2=0.0</em>, <em>qall=0.0</em>, <em>base=25</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/hydroengine/rrmodels.html#Soil"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#hydroengine.rrmodels.Soil" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">hydroengine.rrmodels.</code><code class="descname">Soil</code><span class="sig-paren">(</span><em>ur=0.0</em>, <em>lr=0.0</em>, <em>q0=0.0</em>, <em>q1=0.0</em>, <em>q2=0.0</em>, <em>qall=0.0</em>, <em>base=25</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.Soil" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
 <dl class="attribute">
 <dt id="hydroengine.rrmodels.Soil.runoff">

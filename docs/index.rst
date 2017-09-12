@@ -13,6 +13,7 @@ Welcome to hydroengine's documentation!
    hydroengine
    utils
    hydrovehicle
+   example
 
 
 Indices and tables
