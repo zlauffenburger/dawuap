@@ -90,11 +90,11 @@ def main(argc):
     # pickle current streamflows
     pickle.dump(Q, open("streamflows.pickled", "wb"))
 
-    # plt.imshow(np.clip(et, a_min=0, a_max=10000))
+    # # plt.imshow(np.clip(et, a_min=0, a_max=10000))
+    # # plt.show()
+    # plt.plot(Q_ts)
+    # # plt.plot(ro_ts)
     # plt.show()
-    plt.plot(Q_ts)
-    # plt.plot(ro_ts)
-    plt.show()
 
 
 if __name__ == '__main__':
