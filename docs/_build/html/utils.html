@@ -155,28 +155,6 @@ holding the parameter map. This file is needed to run the hydrovehicle
 <p>Base class to read raster datasets, retrieve and keep metadata, and write geotiffs</p>
 </dd></dl>
 
-<dl class="function">
-<dt id="utils.utilsRaster.write_structured_parameter_array">
-<code class="descclassname">utils.utilsRaster.</code><code class="descname">write_structured_parameter_array</code><span class="sig-paren">(</span><em>filenames</em>, <em>shape</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.utilsRaster.write_structured_parameter_array" title="Permalink to this definition">¶</a></dt>
-<dd><p>Utility to write a json dictionary with HBV model raster parameters.
-The GeoTiff files must exist</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>filenames</strong> &#8211; </li>
-<li><strong>shape</strong> &#8211; </li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"></p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 </div>
 <div class="section" id="module-utils.utilsVector">
 <span id="utils-utilsvector-module"></span><h2>utils.utilsVector module<a class="headerlink" href="#module-utils.utilsVector" title="Permalink to this headline">¶</a></h2>
@@ -199,7 +177,7 @@ If params is not provided, the dataset is updatd with default parameter values</
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
 <li><strong>outfn</strong> &#8211; filename for updated vector network</li>
-<li><strong>params</strong> &#8211; list of parameter dictionaries with format [{&#8216;ARCID&#8217;: ID, &#8216;e&#8217;: value, &#8216;ks&#8217;: value},{}]</li>
+<li><strong>params</strong> &#8211; list of parameter dictionaries with format []</li>
 </ul>
 </td>
 </tr>
@@ -292,26 +270,8 @@ It has the following public methods:</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-utils.writeRainfallRunofflModelParameters">
-<span id="utils-writerainfallrunofflmodelparameters-module"></span><h2>utils.writeRainfallRunofflModelParameters module<a class="headerlink" href="#module-utils.writeRainfallRunofflModelParameters" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
-<dt id="utils.writeRainfallRunofflModelParameters.main">
-<code class="descclassname">utils.writeRainfallRunofflModelParameters.</code><code class="descname">main</code><span class="sig-paren">(</span><em>argc</em><span class="sig-paren">)</span><a class="headerlink" href="#utils.writeRainfallRunofflModelParameters.main" title="Permalink to this definition">¶</a></dt>
-<dd><p>This script writes default rainfall-runoff model parameters to a polygon vector file.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>vectorFile</strong> &#8211; &#8216;vector polygon file with model catchments&#8217;</li>
-<li><strong>outFile</strong> &#8211; &#8216;optional output filename with modified vectorFile&#8217;</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
+<div class="section" id="utils-utilsoutputs-module">
+<h2>utils.utilsOutputs module<a class="headerlink" href="#utils-utilsoutputs-module" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-utils">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-utils" title="Permalink to this headline">¶</a></h2>
@@ -332,7 +292,7 @@ It has the following public methods:</p>
 <li><a class="reference internal" href="#module-utils.DataCollectionThredds">utils.DataCollectionThredds module</a></li>
 <li><a class="reference internal" href="#module-utils.utilsRaster">utils.utilsRaster module</a></li>
 <li><a class="reference internal" href="#module-utils.utilsVector">utils.utilsVector module</a></li>
-<li><a class="reference internal" href="#module-utils.writeRainfallRunofflModelParameters">utils.writeRainfallRunofflModelParameters module</a></li>
+<li><a class="reference internal" href="#utils-utilsoutputs-module">utils.utilsOutputs module</a></li>
 <li><a class="reference internal" href="#module-utils">Module contents</a></li>
 </ul>
 </li>

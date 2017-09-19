@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 
 def main(argc):
 
+    init_date = argc.init_date
 
     with rio.open(argc.precip) as pp:
         pp_affine = pp.affine
@@ -82,13 +83,15 @@ def main(argc):
         print "runoff ", runoff, np.sum(runoff)
         Q = mc.muskingum_routing(Q, ks, e, np.array(runoff), qold)
         qold = np.array(runoff)  # np.insert(runoff, 3, 0)
-        print "Q", Q, np.sum(Q)
+        #print "Q", Q, np.sum(Q)
         ro_ts.append(runoff)
         Q_ts.append(Q)
 
     rr.pickle_current_states()
     # pickle current streamflows
     pickle.dump(Q, open("streamflows.pickled", "wb"))
+    print Q_ts
+    utils.WriteOutputTimeSeries(adj_net, init_date).write_json(Q_ts)
 
     # # plt.imshow(np.clip(et, a_min=0, a_max=10000))
     # # plt.show()
@@ -99,6 +102,7 @@ def main(argc):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Hydrologic engine')
+    parser.add_argument('init_date', help='Simulation start date (mm/dd/yy)')
     parser.add_argument('precip', help='NetCDF file with daily precipitation (mm/day)')
     parser.add_argument('tmin', help='NetCDF file with minimum daily temperature (K)')
     parser.add_argument('tmax', help='file with maximum daily temperature(K)')

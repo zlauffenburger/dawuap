@@ -36,10 +36,10 @@ utils\.utilsVector module
     :undoc-members:
     :show-inheritance:
 
-utils\.writeRainfallRunofflModelParameters module
+utils\.utilsOutputs module
 -------------------------------------------------
 
-.. automodule:: utils.writeRainfallRunofflModelParameters
+.. automodule:: utils.utilsOutputs
     :members:
     :undoc-members:
     :show-inheritance:

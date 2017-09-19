@@ -20,6 +20,6 @@ Usage example
 
 5. Run hydrologic model::
 
-    hydrovehicle.py precip_F2012-09-01_T2013-08-31.nc tempmin_F2012-09-01_T2013-08-31.nc
+    hydrovehicle.py 08/31/2016 precip_F2012-09-01_T2013-08-31.nc tempmin_F2012-09-01_T2013-08-31.nc
      tempmax_F2012-09-01_T2013-08-31.nc param_files_test.json rivout.shp subsout.shp
 
