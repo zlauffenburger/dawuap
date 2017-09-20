@@ -7,6 +7,7 @@ import json
 import numpy as np
 import hydroengine as hyd
 import rasterio as rio
+import tqdm
 import matplotlib.pyplot as plt
 
 
@@ -73,31 +74,35 @@ def main(argc):
     e = np.array(graph.get_parameter('e'))
     ks = np.array(graph.get_parameter('ks'))
 
-    for i in np.arange(pp_data.shape[0]):
-        print "Calcuating time step ", i + 1
-        # Calculate potential evapotranspiration
-        pet = hyd.hamon_pe((tmin_data[i, :, :] + tmax_data[i, :, :]) * 0.5, lat, i)
-        runoff = rr.run_time_step(pp_data[i, :, :], tmax_data[i, :, :], tmin_data[i, :, :], pet, argc.basin_shp,
-                                  affine=tmax_affine, nodata=pp_nodata)
-        # runoff[1] = runoff[-1] = 0
-        print "runoff ", runoff, np.sum(runoff)
-        Q = mc.muskingum_routing(Q, ks, e, np.array(runoff), qold)
-        qold = np.array(runoff)  # np.insert(runoff, 3, 0)
-        #print "Q", Q, np.sum(Q)
-        ro_ts.append(runoff)
-        Q_ts.append(Q)
+    with tqdm.tqdm(total=pp_data.shape[0], unit='days') as pbar:
 
-    rr.pickle_current_states()
-    # pickle current streamflows
-    pickle.dump(Q, open("streamflows.pickled", "wb"))
-    print Q_ts
-    utils.WriteOutputTimeSeries(adj_net, init_date).write_json(Q_ts)
+        for i in np.arange(pp_data.shape[0]):
+            #print "Calcuating time step ", i + 1
+            # Calculate potential evapotranspiration
+            pet = hyd.hamon_pe((tmin_data[i, :, :] + tmax_data[i, :, :]) * 0.5, lat, i)
+            runoff = rr.run_time_step(pp_data[i, :, :], tmax_data[i, :, :], tmin_data[i, :, :], pet, argc.basin_shp,
+                                      affine=tmax_affine, nodata=pp_nodata)
+            # runoff[1] = runoff[-1] = 0
+            #print "runoff ", runoff, np.sum(runoff)
+            Q = mc.muskingum_routing(Q, ks, e, np.array(runoff), qold)
+            qold = np.array(runoff)  # np.insert(runoff, 3, 0)
+            #print "Q", Q, np.sum(Q)
+            ro_ts.append(runoff)
+            Q_ts.append(Q)
+            pbar.update()
 
-    # # plt.imshow(np.clip(et, a_min=0, a_max=10000))
-    # # plt.show()
-    # plt.plot(Q_ts)
-    # # plt.plot(ro_ts)
-    # plt.show()
+        rr.pickle_current_states()
+        # pickle current streamflows
+        pickle.dump(Q, open("streamflows.pickled", "wb"))
+
+        utils.WriteOutputTimeSeries(adj_net, init_date).write_json(Q_ts)
+
+        # # plt.imshow(np.clip(et, a_min=0, a_max=10000))
+        # # plt.show()
+        # plt.plot(Q_ts)
+        # # plt.plot(ro_ts)
+        # plt.show()
+
 
 
 if __name__ == '__main__':

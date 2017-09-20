@@ -7,13 +7,16 @@ import json
 
 
 class WriteOutputTimeSeries(object):
+
     """
     Handles model time series outputs
     """
 
     def __init__(self,  conn_matrix, init_date, dt=1):
-        """
+        """ Initializes object with connectivity matrix, the initial date and the size
+        of the simulation time step (defaults to 1 day)
 
+        :param conn_matrix: connectivity matrix of stream network, pandas dataframe
         :param init_date: date of first time step, string
         :param dt: time step size, days
         """

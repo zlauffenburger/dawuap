@@ -195,8 +195,8 @@ class HBV(RRmodel):
             # in None and raises an exception
             if props['runoff_mean'] is None:
                 props['runoff_mean'] = 0
-                print("WARNING: Catchment " + str(props['Subbasin']) + "  is probably"
-                      " outside the region covered by the climate grids")
+                # print("WARNING: Catchment " + str(props['Subbasin']) + "  is probably"
+                #       " outside the region covered by the climate grids")
             soil_layers.upper_reservoir += props['runoff_mean']
             if soil_layers.upper_reservoir > props['hbv_hl1']:
                 soil_layers.Q0 = (soil_layers.upper_reservoir - props['hbv_hl1']) * hbv_ck0

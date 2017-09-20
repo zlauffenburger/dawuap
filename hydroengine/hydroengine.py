@@ -87,7 +87,7 @@ class Routing(object):
             Qt1 = np.linalg.solve(lhs, rhs)
             Qt = Qt1
 
-            print(np.allclose(np.dot(lhs, Qt1), rhs))
+            #print(np.allclose(np.dot(lhs, Qt1), rhs))
 
         return Qt1
 
