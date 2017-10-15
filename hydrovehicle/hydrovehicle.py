@@ -8,7 +8,6 @@ import numpy as np
 import hydroengine as hyd
 import rasterio as rio
 import tqdm
-import matplotlib.pyplot as plt
 
 
 
@@ -16,22 +15,22 @@ def main(argc):
 
     init_date = argc.init_date
 
-    with rio.open(argc.precip) as pp:
-        pp_affine = pp.affine
-        pp_nodata = int(pp.nodata)
-        pp_data = (pp.read()).clip(min=0)
+    pp = utils.RasterParameterIO(argc.precip)
+    pp_affine = pp.affine
+    pp_nodata = pp.nodata
+    pp_data = pp.array.clip(min=0)
 
-    with rio.open(argc.tmin) as tmin:
-        tmin_affine = tmin.affine
-        tmin_nodata = int(tmin.nodata)
-        tmin_data = tmin.read()
-        tmin_data[tmin_data != tmin_nodata] -= 273.15
+    tmin = utils.RasterParameterIO(argc.tmin)
+    tmin_affine = tmin.affine
+    tmin_nodata = tmin.nodata
+    tmin_data = tmin.array
+    tmin_data[tmin_data != tmin_nodata] -= 273.15
 
-    with rio.open(argc.tmax) as tmax:
-        tmax_affine = tmax.affine
-        tmax_nodata = int(tmax.nodata)
-        tmax_data = tmax.read()
-        tmax_data[tmax_data != tmax_nodata] -= 273.15
+    tmax = utils.RasterParameterIO(argc.tmax)
+    tmax_affine = tmax.affine
+    tmax_nodata = tmax.nodata
+    tmax_data = tmax.array
+    tmax_data[tmax_data != tmax_nodata] -= 273.15
 
     hbv_pars = {}
     with open(argc.params) as json_file:
@@ -39,6 +38,9 @@ def main(argc):
         for key, value in pars.items():
             with rio.open(value, 'r') as src:
                 hbv_pars[key] = src.read(1)
+
+    # Create base raster as template to write tiff outputs
+    # base_map = utils.RasterParameterIO()
 
     # retrieve latitude of cells
     lon, lat = tmax_affine * np.indices(tmin_data[0, :, :].shape)
@@ -96,12 +98,8 @@ def main(argc):
         pickle.dump(Q, open("streamflows.pickled", "wb"))
 
         utils.WriteOutputTimeSeries(adj_net, init_date).write_json(Q_ts)
+        
 
-        # # plt.imshow(np.clip(et, a_min=0, a_max=10000))
-        # # plt.show()
-        # plt.plot(Q_ts)
-        # # plt.plot(ro_ts)
-        # plt.show()
 
 
 

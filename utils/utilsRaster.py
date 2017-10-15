@@ -15,6 +15,7 @@ class ReadRaster(object):
         self.profile = None
         self.shape = None
         self.affine = None
+        self.nodata = None
         self.array = None
         self._read_base_raster()
 
@@ -23,6 +24,7 @@ class ReadRaster(object):
             self.profile = src.profile
             self.shape = src.shape
             self.affine = src.affine
+            self.nodata = int(src.nodata)
             self.array = src.read()
 
     def _write_array_to_geotiff(self, fn_out, np_array):
