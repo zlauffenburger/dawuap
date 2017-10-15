@@ -36,8 +36,9 @@ def main(argc):
     with open(argc.params) as json_file:
         pars = json.load(json_file)
         for key, value in pars.items():
-            with rio.open(value, 'r') as src:
-                hbv_pars[key] = src.read(1)
+            hbv_pars[key] = utils.RasterParameterIO(value, 1).array
+            # with rio.open(value, 'r') as src:
+            #     hbv_pars[key] = src.read(1)
 
     # Create base raster as template to write tiff outputs
     # base_map = utils.RasterParameterIO()
@@ -98,7 +99,7 @@ def main(argc):
         pickle.dump(Q, open("streamflows.pickled", "wb"))
 
         utils.WriteOutputTimeSeries(adj_net, init_date).write_json(Q_ts)
-        
+
 
 
 

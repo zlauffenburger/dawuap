@@ -9,7 +9,7 @@ class ReadRaster(object):
     Base class to read raster datasets, retrieve and keep metadata, and write geotiffs
     """
 
-    def __init__(self, fn_base_raster):
+    def __init__(self, fn_base_raster, band=None):
         self.fn_base_raster = fn_base_raster
         # profile and shape are updated with call to _read_base_raster()
         self.profile = None
@@ -17,15 +17,15 @@ class ReadRaster(object):
         self.affine = None
         self.nodata = None
         self.array = None
-        self._read_base_raster()
+        self._read_base_raster(band)
 
-    def _read_base_raster(self):
+    def _read_base_raster(self, band):
         with rio.open(self.fn_base_raster, 'r') as src:
             self.profile = src.profile
             self.shape = src.shape
             self.affine = src.affine
             self.nodata = int(src.nodata)
-            self.array = src.read()
+            self.array = src.read(band)
 
     def _write_array_to_geotiff(self, fn_out, np_array):
         """
@@ -46,8 +46,8 @@ class RasterParameterIO(ReadRaster):
     """
     Class to manipulate raster model parameters
     """
-    def __init__(self, fn_base_raster):
-        super(RasterParameterIO, self).__init__(fn_base_raster)
+    def __init__(self, fn_base_raster, band=None):
+        super(RasterParameterIO, self).__init__(fn_base_raster, band)
 
     def write_array_to_geotiff(self, fn_out, np_array):
         # type: (object, object) -> object
