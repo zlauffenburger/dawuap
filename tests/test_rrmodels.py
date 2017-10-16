@@ -3,7 +3,6 @@ from context import hydroengine
 import numpy as np
 import cPickle as pickle
 import nose
-import rasterstats as rst
 import rasterio as rio
 #import matplotlib.pyplot as plt
 import json
@@ -32,6 +31,7 @@ class TestHBV(object):
         cls.swe_o = np.zeros((20, 30))
         cls.pond_o = np.zeros_like(TestHBV.swe_o)
         cls.sm_o = np.zeros_like(TestHBV.swe_o)
+        cls.aet_o = np.zeros_like(TestHBV.swe_o)
 
 
     @classmethod
@@ -41,6 +41,7 @@ class TestHBV(object):
     def setUp(self):
         print("setting up " + self.__class__.__name__)
         TestHBV.ohbv = hydroengine.HBV(86400, TestHBV.swe_o, TestHBV.pond_o, TestHBV.sm_o, **TestHBV.args)
+        TestHBV.ohbv.aet = self.aet_o
 
     def tearDown(self):
         TestHBV.swe_o = np.zeros((20, 30))
@@ -151,8 +152,6 @@ class TestHBV(object):
         # ax.axis('scaled')
         # plt.show()
 
-
-
     def test_pickle_current_states(self):
         self.ohbv.pickle_current_states()
         sm = pickle.load(open("sm.pickled","rb"))
@@ -161,6 +160,19 @@ class TestHBV(object):
         nose.tools.assert_equals(self.ohbv.sm.all(), sm.all())
         nose.tools.assert_equals(self.ohbv.swe.all(), swe.all())
         nose.tools.assert_equals(self.ohbv.pond.all(), pond.all())
+
+    def test_write_current_states(self):
+
+        self.ohbv.write_current_states("08122006", "txt", lambda s, data: np.savetxt(s, data))
+        swe = np.loadtxt("swe_08122006.txt")
+        pond = np.loadtxt("pond_08122006.txt")
+        melt = np.loadtxt("melt_08122006.txt")
+        aet = np.loadtxt("aet_08122006.txt")
+
+        nose.tools.assert_equals(self.ohbv.swe.all(), swe.all())
+        nose.tools.assert_equals(self.ohbv.pond.all(), pond.all())
+        nose.tools.assert_equals(self.ohbv.melt.all(), melt.all())
+        nose.tools.assert_equals(self.ohbv.aet.all(), aet.all())
 
 
 

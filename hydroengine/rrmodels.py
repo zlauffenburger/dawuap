@@ -263,6 +263,33 @@ class HBV(RRmodel):
         # save soil states
         pickle.dump(self.soils, open("soils.pickled", "wb"))
 
+    def unpickle_current_states(self):
+        pass
+
+    def write_current_states(self, current_ts, ext, callback):
+        """Saves state and diagnostic variables to disk. Filename of written state includes current_ts
+
+        The object writing operation is done by a callback function with prototype
+        type(string, object) -> None
+
+            ```callback(string, object)```
+
+        Function raises IOError if fails to write
+
+        :param current_ts: string with current time stamp
+        :param ext: extension to be appended at the end of the output filenames
+        :param callback: callback function to handle writing to disk
+
+
+        """
+        try:
+            callback("swe_" + str(current_ts) + "." + str(ext).strip('.'), self.swe)
+            callback("pond_" + str(current_ts) + "." + str(ext).strip('.'), self.pond)
+            callback("melt_" + str(current_ts) + "." + str(ext).strip('.'), self.melt)
+            callback("aet_" + str(current_ts) + "." + str(ext).strip('.'), self.aet)
+        except IOError as e:
+            print e.message
+            raise e
 
 
     @property

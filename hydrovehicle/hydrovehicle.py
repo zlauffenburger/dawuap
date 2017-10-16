@@ -1,6 +1,8 @@
 #from __future__ import print_function
 from __future__ import division
 import argparse
+import datetime
+from dateutil.parser import parse
 import utils
 import pickle
 import json
@@ -37,8 +39,6 @@ def main(argc):
         pars = json.load(json_file)
         for key, value in pars.items():
             hbv_pars[key] = utils.RasterParameterIO(value, 1).array
-            # with rio.open(value, 'r') as src:
-            #     hbv_pars[key] = src.read(1)
 
     # Create base raster as template to write tiff outputs
     # base_map = utils.RasterParameterIO()
@@ -92,6 +92,14 @@ def main(argc):
             #print "Q", Q, np.sum(Q)
             ro_ts.append(runoff)
             Q_ts.append(Q)
+
+            # write to drive the states for the current time step
+            cur_date = (parse(init_date) + i * datetime.timedelta(seconds=rr.dt)).strftime("%Y%m%d")
+            latlon = np.array((lat.ravel(), lon.ravel()))
+            rr.write_current_states(cur_date, ".txt",
+                                    lambda s, data: np.savetxt(s, np.vstack((latlon, data.ravel())).T,
+                                                               header="latitude longitude data")
+                                    )
             pbar.update()
 
         rr.pickle_current_states()
@@ -99,9 +107,6 @@ def main(argc):
         pickle.dump(Q, open("streamflows.pickled", "wb"))
 
         utils.WriteOutputTimeSeries(adj_net, init_date).write_json(Q_ts)
-
-
-
 
 
 if __name__ == '__main__':

@@ -38,8 +38,11 @@ class ReadRaster(object):
         if not isinstance(np_array, np.ndarray) or np_array.shape != self.shape:
             raise ValueError("Shape mismatch!. Template shape is %s. Arrays shape is %s" % (src.shape, array.shape))
         self.profile.update(driver='GTiff', count=1, dtype='float64')
-        with rio.open(fn_out, 'w', **self.profile) as dst:
-            dst.write(np_array.astype('float64'), 1)
+        try:
+            with rio.open(fn_out, 'w', **self.profile) as dst:
+                dst.write(np_array.astype('float64'), 1)
+        except IOError as e:
+            raise e
 
 
 class RasterParameterIO(ReadRaster):
@@ -50,7 +53,7 @@ class RasterParameterIO(ReadRaster):
         super(RasterParameterIO, self).__init__(fn_base_raster, band)
 
     def write_array_to_geotiff(self, fn_out, np_array):
-        # type: (object, object) -> object
+        # type: (basestring, object) -> None
         """
             Wrapper of function defined in parent class to write numpy arrays
              as tiff file using metadata from a template GeoTiff map.
