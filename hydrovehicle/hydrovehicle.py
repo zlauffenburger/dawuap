@@ -96,10 +96,7 @@ def main(argc):
             # write to drive the states for the current time step
             cur_date = (parse(init_date) + i * datetime.timedelta(seconds=rr.dt)).strftime("%Y%m%d")
             latlon = np.array((lat.ravel(), lon.ravel()))
-            rr.write_current_states(cur_date, ".txt",
-                                    lambda s, data: np.savetxt(s, np.vstack((latlon, data.ravel())).T,
-                                                               header="latitude longitude data")
-                                    )
+            rr.write_current_states(cur_date, ".tif", pp.write_array_to_geotiff)
             pbar.update()
 
         rr.pickle_current_states()
