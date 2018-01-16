@@ -2,7 +2,7 @@ FROM python:2.7-stretch
 
 MAINTAINER dan.catalano@nwbt.co
 
-RUN apt-get update && apt-get install -y nco && pip install pandas
+RUN apt-get update && apt-get install -y nco gdal-bin libgdal-dev && pip install pandas
 
 COPY . /usr/src/app
 
