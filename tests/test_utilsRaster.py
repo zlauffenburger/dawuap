@@ -17,13 +17,21 @@ class TestRasterIO(object):
     def setup(self):
         self.fn_netcdf = '../tests/test_data/precip.nc'
 
-
     def teardown(self):
         pass
 
     def test_init_netcdf(self):
         a = utils.RasterParameterIO(self.fn_netcdf)
         nose.tools.assert_equal(a.fn_base_raster, self.fn_netcdf)
+
+    def test_update_array(self):
+        a = utils.RasterParameterIO(self.fn_netcdf)
+        array = a.array
+        np.testing.assert_almost_equal(a.array, array)
+        array2 = a.array[1, :, :]
+        a.update_raster(self.fn_netcdf, band=2)
+        np.testing.assert_almost_equal(a.array, array2)
+
 
     def test_write_array_as_geotiff(self):
         a = utils.RasterParameterIO(self.fn_netcdf)
@@ -75,6 +83,7 @@ class TestRasterDatasetHBV(object):
                                         self.fn_aet_lp_param)
         a.write_parameter_input_file('../tests/test_data/param_files.json')
         filecmp.cmp('../tests/test_data/param_files.json', self.fn_json_param)
+
 
     # def test_write_structured_parameter_array(self):
     #     import json

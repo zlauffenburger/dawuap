@@ -27,6 +27,31 @@ class ReadRaster(object):
             self.nodata = int(src.nodata)
             self.array = src.read(band)
 
+    def update_raster(self, fn_new_raster, band=None):
+        """
+        Updates the array of an existing Raster object with the array of fn_new_raster.
+        The shape of the file pointed to by fn_new_raster needs to be identical to the
+        existing raster.
+
+        :param fn_new_raster: filename of the new raster file to update existing raster
+        :param band: Band of fn_new_raster to use for the update
+        :return: None
+        """
+
+        try:
+            with rio.open(fn_new_raster, 'r') as src:
+                shape = src.shape
+                nodata = int(src.nodata)
+                array = src.read(band)
+        except IOError as e:
+            raise e
+
+        if shape != self.shape:
+            raise ValueError("Shape mismatch!. Template shape is %s. Arrays shape is %s" % (src.shape, array.shape))
+
+        self.array = array
+        self.nodata = int(nodata)
+
     def _write_array_to_geotiff(self, fn_out, np_array):
         """
         Writes numpy arrays as tiff file using metadata from a template GeoTiff map.

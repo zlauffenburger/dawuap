@@ -1,26 +1,15 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
   <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
     <title>hydroengine package &#8212; hydroengine  documentation</title>
-    
     <link rel="stylesheet" href="_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
@@ -28,17 +17,13 @@
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="utils package" href="utils.html" />
     <link rel="prev" title="Welcome to hydroengine’s documentation!" href="index.html" /> 
-  </head>
-  <body role="document">
+  </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
         <li class="right" >
           <a href="utils.html" title="utils package"
              accesskey="N">next</a> |</li>
@@ -59,229 +44,20 @@
 <div class="section" id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-hydroengine.RRmodel">
-<span id="hydroengine-rrmodel-module"></span><h2>hydroengine.RRmodel module<a class="headerlink" href="#module-hydroengine.RRmodel" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
-<dt id="hydroengine.RRmodel.RRmodel">
-<em class="property">class </em><code class="descclassname">hydroengine.RRmodel.</code><code class="descname">RRmodel</code><span class="sig-paren">(</span><em>dt</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.RRmodel.RRmodel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>Base class defining the basic interface of rainfall runoff models.</p>
-<p>The actual rainfall runoff models are implemented in a derived class. This class
-must override the runoff() and run_time_step() methods</p>
-<dl class="method">
-<dt id="hydroengine.RRmodel.RRmodel.pickle_current_states">
-<code class="descname">pickle_current_states</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.RRmodel.RRmodel.pickle_current_states" title="Permalink to this definition">¶</a></dt>
-<dd><p>Virtual method to be overriden by a derived class.</p>
-<p>Derived class must implement a function to pickle all state variables and permit to restart model from
-pickled states</p>
-<p>Function must take no arguments. No specification for return values</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="hydroengine.RRmodel.RRmodel.run_time_step">
-<code class="descname">run_time_step</code><span class="sig-paren">(</span><em>*args</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.RRmodel.RRmodel.run_time_step" title="Permalink to this definition">¶</a></dt>
-<dd><p>Virtual method to be overriden by a derived class.
-Derived class must implement the run_time_step method(). This method must run the
-model forward one time step.</p>
-<p>No specifications for input arguments and return values</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="hydroengine.RRmodel.RRmodel.runoff">
-<code class="descname">runoff</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.RRmodel.RRmodel.runoff" title="Permalink to this definition">¶</a></dt>
-<dd><p>Virtual method to be overriden by a derived class.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Derived class must return a list of streamflows, with one element per node in the domain.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="hydroengine.RRmodel.RRmodel.unpickle_current_states">
-<code class="descname">unpickle_current_states</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.RRmodel.RRmodel.unpickle_current_states" title="Permalink to this definition">¶</a></dt>
-<dd><p>Virtual method to be overriden by a derived class.</p>
-<p>Derived class must implement a function to read all pickled state variables written by
-pickle_current_states() and permit to restart model these states</p>
-<p>Function must take no arguments. No specification for return values</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="hydroengine.RRmodel.RRmodel.write_current_states">
-<code class="descname">write_current_states</code><span class="sig-paren">(</span><em>current_ts</em>, <em>ext</em>, <em>callback</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.RRmodel.RRmodel.write_current_states" title="Permalink to this definition">¶</a></dt>
-<dd><p>Virtual method to be overriden by a derived class.</p>
-<p>No specification for return values.
-Raises IOError exception if writing fails</p>
-<p>This function writes to disk the model state for any time step in a format that can be used for
-plotting, visualization.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>current_ts</strong> &#8211; Current timestep, string</li>
-<li><strong>ext</strong> &#8211; extension to be attached at the end of the output files, str</li>
-<li><strong>callback</strong> &#8211; Callback function to write states to disk</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
+<div class="section" id="hydroengine-rrmodel-module">
+<h2>hydroengine.RRmodel module<a class="headerlink" href="#hydroengine-rrmodel-module" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-hydroengine.aux_models">
-<span id="hydroengine-aux-models-module"></span><h2>hydroengine.aux_models module<a class="headerlink" href="#module-hydroengine.aux_models" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
-<dt id="hydroengine.aux_models.hamon_pe">
-<code class="descclassname">hydroengine.aux_models.</code><code class="descname">hamon_pe</code><span class="sig-paren">(</span><em>t_avg</em>, <em>latitude</em>, <em>doy</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.aux_models.hamon_pe" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes potential evapotranspiration using the Hamon method, which depends on average temperature,
-daytime length, and saturation vapor pressure</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>t_avg</strong> &#8211; Average temperature, C</li>
-<li><strong>latitude</strong> &#8211; latitude, deg</li>
-<li><strong>doy</strong> &#8211; day of year, starting on jan 1st</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">evapotranspiration, mm/day</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
+<div class="section" id="hydroengine-aux-models-module">
+<h2>hydroengine.aux_models module<a class="headerlink" href="#hydroengine-aux-models-module" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-hydroengine.hydroengine">
-<span id="hydroengine-hydroengine-module"></span><h2>hydroengine.hydroengine module<a class="headerlink" href="#module-hydroengine.hydroengine" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
-<dt id="hydroengine.hydroengine.Routing">
-<em class="property">class </em><code class="descclassname">hydroengine.hydroengine.</code><code class="descname">Routing</code><span class="sig-paren">(</span><em>conn</em>, <em>dt</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.hydroengine.Routing" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>A hydrologic engine for a water management and decision support system.</p>
-<p>This is the central class of the hydrologic component. It is initialized with the
-connectivity matrix of the network and routes runoff generated at each node subcatchment
-through out the network.</p>
-<p>It uses outputs from the rainfall runoff models as water so</p>
-<dl class="method">
-<dt id="hydroengine.hydroengine.Routing.muskingum_routing">
-<code class="descname">muskingum_routing</code><span class="sig-paren">(</span><em>Qt</em>, <em>K</em>, <em>e</em>, <em>qnew</em>, <em>qold</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.hydroengine.Routing.muskingum_routing" title="Permalink to this definition">¶</a></dt>
-<dd><p>Routes water through a network graph using the Muskingum-Cunge method.</p>
-<p>This function takes an initial distribution of streamflows at nodes
-in the network and routes them one time step.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>Qt</strong> &#8211; vector of streamflows at time t</li>
-<li><strong>K</strong> &#8211; vector of reach storage parameters of size n.</li>
-<li><strong>e</strong> &#8211; vector of balances between inflows and outflows</li>
-<li><strong>q</strong> &#8211; vector of lateral inflows</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">vector of size n with streamflows at time t+1.</p>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
+<div class="section" id="hydroengine-hydroengine-module">
+<h2>hydroengine.hydroengine module<a class="headerlink" href="#hydroengine-hydroengine-module" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-hydroengine.rrmodels">
-<span id="hydroengine-rrmodels-module"></span><h2>hydroengine.rrmodels module<a class="headerlink" href="#module-hydroengine.rrmodels" title="Permalink to this headline">¶</a></h2>
-<dl class="class">
-<dt id="hydroengine.rrmodels.HBV">
-<em class="property">class </em><code class="descclassname">hydroengine.rrmodels.</code><code class="descname">HBV</code><span class="sig-paren">(</span><em>dt</em>, <em>swe_o</em>, <em>pond_o</em>, <em>sm_o</em>, <em>soils_o=[]</em>, <em>**params</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#hydroengine.RRmodel.RRmodel" title="hydroengine.RRmodel.RRmodel"><code class="xref py py-class docutils literal"><span class="pre">hydroengine.RRmodel.RRmodel</span></code></a></p>
-<p>Implementation of the classic HVB rainfall-runoff model</p>
-<dl class="method">
-<dt id="hydroengine.rrmodels.HBV.pickle_current_states">
-<code class="descname">pickle_current_states</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV.pickle_current_states" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="hydroengine.rrmodels.HBV.precipitation_excess">
-<code class="descname">precipitation_excess</code><span class="sig-paren">(</span><em>shp_wtshds, affine=None, stats=['mean'], **kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV.precipitation_excess" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="hydroengine.rrmodels.HBV.run_time_step">
-<code class="descname">run_time_step</code><span class="sig-paren">(</span><em>incid_precip, t_max, t_min, pot_et, shp_wtshds, affine=None, stats=['mean'], **kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV.run_time_step" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="hydroengine.rrmodels.HBV.runoff">
-<code class="descname">runoff</code><a class="headerlink" href="#hydroengine.rrmodels.HBV.runoff" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="hydroengine.rrmodels.HBV.snow_pack">
-<code class="descname">snow_pack</code><span class="sig-paren">(</span><em>incid_precip</em>, <em>t_max</em>, <em>t_min</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV.snow_pack" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="hydroengine.rrmodels.HBV.soil_processes">
-<code class="descname">soil_processes</code><span class="sig-paren">(</span><em>pot_et</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV.soil_processes" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="hydroengine.rrmodels.HBV.unpickle_current_states">
-<code class="descname">unpickle_current_states</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV.unpickle_current_states" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="hydroengine.rrmodels.HBV.write_current_states">
-<code class="descname">write_current_states</code><span class="sig-paren">(</span><em>current_ts</em>, <em>ext</em>, <em>callback</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.HBV.write_current_states" title="Permalink to this definition">¶</a></dt>
-<dd><p>Saves state and diagnostic variables to disk. Filename of written state includes current_ts</p>
-<p>The object writing operation is done by a callback function with prototype
-type(string, object) -&gt; None</p>
-<blockquote>
-<div><code class="docutils literal"><span class="pre">`callback(string,</span> <span class="pre">object)`</span></code></div></blockquote>
-<p>Function raises IOError if fails to write</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>current_ts</strong> &#8211; string with current time stamp</li>
-<li><strong>ext</strong> &#8211; extension to be appended at the end of the output filenames</li>
-<li><strong>callback</strong> &#8211; callback function to handle writing to disk</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="hydroengine.rrmodels.Soil">
-<em class="property">class </em><code class="descclassname">hydroengine.rrmodels.</code><code class="descname">Soil</code><span class="sig-paren">(</span><em>ur=0.0</em>, <em>lr=0.0</em>, <em>q0=0.0</em>, <em>q1=0.0</em>, <em>q2=0.0</em>, <em>qall=0.0</em>, <em>base=25</em><span class="sig-paren">)</span><a class="headerlink" href="#hydroengine.rrmodels.Soil" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<dl class="attribute">
-<dt id="hydroengine.rrmodels.Soil.runoff">
-<code class="descname">runoff</code><a class="headerlink" href="#hydroengine.rrmodels.Soil.runoff" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
+<div class="section" id="hydroengine-rrmodels-module">
+<h2>hydroengine.rrmodels module<a class="headerlink" href="#hydroengine-rrmodels-module" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-hydroengine">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-hydroengine" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="module-contents">
+<h2>Module contents<a class="headerlink" href="#module-contents" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -295,18 +71,18 @@ type(string, object) -&gt; None</p>
   <ul>
 <li><a class="reference internal" href="#">hydroengine package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
-<li><a class="reference internal" href="#module-hydroengine.RRmodel">hydroengine.RRmodel module</a></li>
-<li><a class="reference internal" href="#module-hydroengine.aux_models">hydroengine.aux_models module</a></li>
-<li><a class="reference internal" href="#module-hydroengine.hydroengine">hydroengine.hydroengine module</a></li>
-<li><a class="reference internal" href="#module-hydroengine.rrmodels">hydroengine.rrmodels module</a></li>
-<li><a class="reference internal" href="#module-hydroengine">Module contents</a></li>
+<li><a class="reference internal" href="#hydroengine-rrmodel-module">hydroengine.RRmodel module</a></li>
+<li><a class="reference internal" href="#hydroengine-aux-models-module">hydroengine.aux_models module</a></li>
+<li><a class="reference internal" href="#hydroengine-hydroengine-module">hydroengine.hydroengine module</a></li>
+<li><a class="reference internal" href="#hydroengine-rrmodels-module">hydroengine.rrmodels module</a></li>
+<li><a class="reference internal" href="#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="index.html"
-                        title="previous chapter">Welcome to hydroengine&#8217;s documentation!</a></p>
+                        title="previous chapter">Welcome to hydroengine’s documentation!</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="utils.html"
                         title="next chapter">utils package</a></p>
@@ -319,12 +95,14 @@ type(string, object) -&gt; None</p>
    </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -338,9 +116,6 @@ type(string, object) -&gt; None</p>
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="py-modindex.html" title="Python Module Index"
-             >modules</a> |</li>
-        <li class="right" >
           <a href="utils.html" title="utils package"
              >next</a> |</li>
         <li class="right" >
@@ -351,7 +126,7 @@ type(string, object) -&gt; None</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2017, Author.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.5.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.0.
     </div>
   </body>
 </html>
