@@ -14,10 +14,13 @@ def rho(sigma):
 class Farm(WaterUser):
     """Class representing economic behavior of farms"""
 
-    def __init__(self, identifier, name, eta, sigma, share, prices, costs,  L):
+    def __init__(self, identifier, name, eta, sigma, costs, L):
         self.eta = np.array(eta)
         self.rho = rho(sigma)
         self.sigma = sigma
+
+        self.costs = costs  # land and water costs. Array with one row per crop. First column land second column water
+
 
         self.land_ref = np.array(L)
         super(Farm, self).__init__(identifier, name)
@@ -30,7 +33,7 @@ class Farm(WaterUser):
                              'for farm %i with name %s failed' % (self.id, self.name))
 
         # Check calibration criteria 2
-        b = (xbar)**2/(p * qbar)
+        b = xbar**2/(p * qbar)
         psi = self.sigma*ybar_w / (self.eta * (1 - ybar_w))
         ind = np.arange(len(b))
         cc2 = b * self.eta * (1 - psi) - [np.sum(b[ind != i] *
@@ -52,7 +55,7 @@ class Farm(WaterUser):
         :return:
         """
 
-        b = (xbar)**2 / (p * qbar)
+        b = xbar**2 / (p * qbar)
         num = b / (delta * (1 - delta))
         dem = np.sum(num + self.sigma*b*ybar_w/(delta * (delta - ybar_w)))
         return delta / (1 - delta) * (1 - (num/dem))
@@ -67,6 +70,61 @@ class Farm(WaterUser):
         num = beta[:, -1] * xbar[:, -1]**r
         den = np.diag(np.dot(beta, xbar.T**r))
         return delta * num/den
+
+    def production_function(self, beta, delta, mu, xbar):
+        """
+        Constant elasticity of substitution production function
+
+        :return:
+        """
+        r = rho(self.sigma)
+        return mu * np.diag(np.dot(beta, xbar.T**r))**(delta/r)
+
+    def _lambda_land_optimality_condition(self, lambda_land, prices, delta, qbar, y_bar_w, xbar):
+        """
+        First order optimality condition for the calibration of the land shadow value.
+        Shadow value is calibrated to observed states when the function returns 0
+
+        :param beta:
+        :param delta:
+        :param mu:
+        :param xbar:
+        :return:
+        """
+        #qbar  = #self.production_function(beta, delta, mu, xbar)
+        #yw = #self._y_bar_w_sim(beta, delta, xbar)
+        lambda_land = np.asarray(lambda_land)
+        prices = np.asarray(prices)
+        delta = np.asarray(delta)
+        qbar = np.asarray(qbar)
+        y_bar_w = np.asarray(y_bar_w)
+        xbar = np.asarray(xbar)
+
+        condition = -2. * (self.costs[:, 0] + lambda_land) * xbar[:, 0]**2 + 2 * xbar[:, 0] * prices * qbar * delta
+
+        return np.sum(condition)
+
+    def _lambda_land_water_optimality_conditions(self, lambda_land, lamL, xbar):
+
+        l = np.array([lamL, 0])
+        rhs_lambdas = (self.costs + lambda_land + l) * xbar
+
+        return rhs_lambdas
+
+    def _observed_activity(self, prices, ybar_w, ybar, xbar):
+
+        qbar = ybar * xbar[:, 0]
+
+        return np.concatenate((self.eta, ybar_w, qbar, np.sum(-2*prices*qbar*ybar_w),
+                               -prices*qbar*ybar_w, prices*qbar*ybar_w))
+
+    def optimize_parameters(self):
+
+        pass
+
+
+
+
 
     def simulate(self):
         pass
