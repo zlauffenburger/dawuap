@@ -1,0 +1,83 @@
+{
+  "farms":[
+    {
+      "id": 1,
+      "name": "Ravalli",
+      "crop_list": ["dryland barley", "dryland alfalfa", "irrigated alfalfa", "dryland peas",
+        "dryland spring wheat", "irrigated spring wheat", "dryland durum wheat", "dryland winter wheat"],
+      "input_list": ["land","water"],
+      "parameters": {
+        "sigmas": [0.5],
+        "deltas": [0.276, 0.227, 0.225, 0.620, 0.304, 0.276, 0.261, 0.387],
+        "betas": [[0.418, 0.582],
+                               [0.016, 0.984],
+                               [0.002, 0.998],
+                               [0.217, 0.783],
+                               [0.448, 0.552],
+                               [0.126, 0.874],
+                               [0.402, 0.598],
+                               [0.522, 0.478]],
+        "mus": [0.153, 0.082, 0.056, 0.327, 0.306, 0.038, 0.070, 0.427],
+        "first_stage_lambda": [0],
+        "lambdas_land": [[0.563, 0.002, -0.804, 0.136, 0.369, 0.227, 0.436, 0.663],
+                                 [0, 0, -6.482, 0, 0, -2.688, 0, 0]]
+      },
+      "constraints":{
+        "land:": [-1],
+        "water": [-1]
+      },
+      "simulated_states":{
+        "used_land": [0.1220, 0.0250, 0.0078, 0.0328, 0.1636, 0.0051, 0.0189, 0.6247],
+        "used_water": [0, 0, 27.25, 0, 0, 20.0, 0, 0],
+        "supply_elasticity_eta": [0.35, 0.29, 0.29, 1.33, 0.38, 0.38, 0.35, 0.35],
+        "yields": [35, 2.2, 5.4, 1.7, 30, 110, 36, 36],
+        "yield_elasticity_water": [0.06, 0.21, 0.21, 0.26, 0.06, 0.06, 0.06, 0.06]
+      },
+      "normalization_refs":{
+        "reference_et": [25],
+        "reference_prices": [5.33, 112, 112, 121.85, 6.86, 6.86, 8.02, 6.20],
+        "reference_yields": [52.56, 2.11, 2.11, 1.57, 29.01, 63.63, 29, 70.37]
+      }
+    },
+    {
+      "id": 2,
+      "name": "Lake",
+      "crop_list": ["dryland barley", "dryland alfalfa", "irrigated alfalfa", "dryland peas",
+        "dryland spring wheat", "irrigated spring wheat", "dryland durum wheat", "dryland winter wheat"],
+      "input_list": ["land","water"],
+      "parameters": {
+        "sigmas": [0.5],
+        "deltas": [0.276, 0.227, 0.225, 0.620, 0.304, 0.276, 0.261, 0.387],
+        "betas": [[0.418, 0.582],
+                               [0.016, 0.984],
+                               [0.002, 0.998],
+                               [0.217, 0.783],
+                               [0.448, 0.552],
+                               [0.126, 0.874],
+                               [0.402, 0.598],
+                               [0.522, 0.478]],
+        "mus": [0.153, 0.082, 0.056, 0.327, 0.306, 0.038, 0.070, 0.427],
+        "first_stage_lambda": [0],
+        "lambdas_land": [[0.563, 0.002, -0.804, 0.136, 0.369, 0.227, 0.436, 0.663],
+                                 [0, 0, -6.482, 0, 0, -2.688, 0, 0]]
+      },
+      "constraints":{
+        "land:": [-1],
+        "water": [-1]
+      },
+      "simulated_states:":{
+        "used_land": [0.1220, 0.0250, 0.0078, 0.0328, 0.1636, 0.0051, 0.0189, 0.6247],
+        "used_water": [0, 0, 27.25, 0, 0, 20.0, 0, 0],
+        "supply_elasticity_eta": [0.35, 0.29, 0.29, 1.33, 0.38, 0.38, 0.35, 0.35],
+        "yields": [35, 2.2, 5.4, 1.7, 30, 110, 36, 36],
+        "yield_elasticity_water": [0.06, 0.21, 0.21, 0.26, 0.06, 0.06, 0.06, 0.06]
+      },
+      "normalization_refs":{
+        "reference_et": [25],
+        "reference_prices": [5.33, 112, 112, 121.85, 6.86, 6.86, 8.02, 6.20],
+        "reference_yields": [52.56, 2.11, 2.11, 1.57, 29.01, 63.63, 29, 70.37]
+      }
+
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 from econengine import econfuncs
 import numpy as np
+import json
 import nose
 
 
@@ -45,8 +46,8 @@ class TestFarm(object):
 
         self.mus = np.array([0.153, 0.082, 0.056, 0.327, 0.306, 0.038, 0.070, 0.427])
         self.first_stage_lambda = np.array([0])
-        self.lambdas = np.array([[0.563, 0.002, -0.804, 0.136, 0.369, 0.227, 0.436, 0.663],
-                                 [0,0,-6.482, 0, 0, -2.688, 0, 0]]).T
+        self.lambdas_land = np.array([[0.563, 0.002, -0.804, 0.136, 0.369, 0.227, 0.436, 0.663],
+                                 [0, 0, -6.482, 0, 0, -2.688, 0, 0]]).T
 
         self.obs_land = np.array([0.1220, 0.0250, 0.0078, 0.0328, 0.1636, 0.0051, 0.0189, 0.6247])
 
@@ -78,14 +79,17 @@ class TestFarm(object):
             'betas': self.betas,
             'mus': self.mus,
             'first_stage_lambda': self.first_stage_lambda,
-            'lambdas': self.lambdas,
+            'lambdas': self.lambdas_land,
             'costs': self.costs,
             'obs_allocation': self.xbar
         }
 
-        self.a = econfuncs.Farm(TestFarm.id,
-                                TestFarm.name,
-                                **params)
+        with open('test_data/Farms.json') as json_farms:
+            farms = json.load(json_farms)
+
+        farm1 = farms['farms'][0]
+
+        self.a = econfuncs.Farm(**farm1)
 
     @classmethod
     def teardown_class(cls):
@@ -102,6 +106,8 @@ class TestFarm(object):
 
         nose.tools.assert_raises(ValueError,
                                  TestFarm.a._check_calibration_criteria(
+                                     np.array(TestFarm.sigma),
+                                     np.array(TestFarm.eta),
                                      np.array(TestFarm.obs_land),
                                      np.array(TestFarm.ybar_w)*10,
                                  np.array(TestFarm.qbar),
@@ -112,6 +118,8 @@ class TestFarm(object):
 
         nose.tools.assert_raises(ValueError,
                                  TestFarm.a._check_calibration_criteria(
+                                     np.array(TestFarm.sigma),
+                                     np.array(TestFarm.eta),
                                      np.array(TestFarm.obs_land),
                                      np.array(TestFarm.ybar_w)*10,
                                      np.array(TestFarm.qbar),
@@ -123,6 +131,7 @@ class TestFarm(object):
         delta = TestFarm.deltas
 
         np.testing.assert_allclose(TestFarm.a._eta_sim(
+            np.array(TestFarm.sigma),
             np.array(delta),
             np.array(TestFarm.xbar),
             np.array(TestFarm.ybar_w),
@@ -136,6 +145,7 @@ class TestFarm(object):
         beta = TestFarm.betas
         delta = TestFarm.deltas
         np.testing.assert_allclose(TestFarm.a._y_bar_w_sim(
+            np.array(TestFarm.sigma),
             np.array(beta),
             np.array(delta),
             np.array(TestFarm.xbar)),
@@ -149,6 +159,7 @@ class TestFarm(object):
         mu = self.mus
 
         np.testing.assert_allclose(TestFarm.a.production_function(
+            np.array(TestFarm.sigma),
             np.array(beta),
             np.array(delta),
             np.array(mu),
@@ -180,16 +191,18 @@ class TestFarm(object):
         print lambda_opt
 
         np.testing.assert_allclose(
-            TestFarm.a._first_stage_lambda_land_lhs(lambda_opt['x'], p, delta, qbar, ybarw, xbar),
+            TestFarm.a._first_stage_lambda_land_lhs(lambda_opt['x'], p, c, delta, qbar, ybarw, xbar),
             np.sum(2 * xbar[:, 0] * p * qbar * ybarw), rtol=1e-5)
 
     def test_set_reference_observations(self):
 
         observs = {
+            'eta': self.eta,
             'ybar': self.ybar,
             'xbar': self.xbar,
             'ybar_w': self.ybar_w,
-            'prices': self.prices
+            'prices': self.prices,
+            'costs': self.costs
         }
 
         pmp = TestFarm.a.set_reference_observations(**observs)
