@@ -26,6 +26,8 @@ class Farm(WaterUser):
         self.input_list = kwargs.get('input_list')
 
         self.sigmas = np.asarray(kwargs['parameters'].get('sigmas'))
+        if len(self.sigmas) == 1:
+            self.sigmas = np.repeat(self.sigmas, len(self.crop_list))
 
         self.deltas = np.asarray(kwargs['parameters'].get('deltas'))
         self.betas = np.asarray(kwargs['parameters'].get('betas'))
@@ -176,19 +178,20 @@ class Farm(WaterUser):
 
         def func(pars):
 
+            sigmas = self.sigmas
+
             first_stage_lambda = pars[-1] # first stage lambda always the last parameter
             pars2 = pars[:-1].reshape(-1, prices.size).T
-            sigmas = pars2[:, 0]
-            deltas = pars2[:, 1]
-            betas = pars2[:, 2:4]
-            mus = pars2[:, 4]
-            lambdas = pars2[:, 5:]
+            deltas = pars2[:, 0]
+            betas = pars2[:, 1:3]
+            mus = pars2[:, 3]
+            lambdas = pars2[:, 4:]
             rhs = self._observed_activity(prices, eta, ybar_w, ybar, xbar)
 
             lhs = np.hstack((
                 self._eta_sim(sigmas, deltas, xbar, ybar_w, qbar, prices),
-                self._y_bar_w_sim(betas, deltas, xbar),
-                self.production_function(betas, deltas, mus, xbar),
+                self._y_bar_w_sim(sigmas, betas, deltas, xbar),
+                self.production_function(sigmas, betas, deltas, mus, xbar),
                 self._convex_sum_constraint(betas),
                 self._first_stage_lambda_land_lhs(first_stage_lambda, prices, costs, deltas, qbar, ybar_w, xbar),
                 self._lambda_land_water_lhs(lambdas, first_stage_lambda, costs, xbar).T.flatten()))
@@ -196,7 +199,7 @@ class Farm(WaterUser):
             return lhs - rhs
 
         def calibrate():
-            x = np.hstack((self.sigmas, self.deltas, self.betas.T.flatten(),
+            x = np.hstack((self.deltas, self.betas.T.flatten(),
                            self.mus, self.lambdas_land.T.flatten(), self.first_stage_lambda))
             return sci.root(func, x, method='lm')
 
