@@ -41,7 +41,7 @@ class Farm(WaterUser):
         self.landsim = kwargs['simulated_states'].get('used_land')
         self.watersim = kwargs['simulated_states'].get('used_water')
         self.etasim = kwargs['simulated_states'].get('supply_elasticity_eta')
-        self.ysim =kwargs['simulated_states'].get('yields')
+        self.ysim = kwargs['simulated_states'].get('yields')
         self.ysim_w = kwargs['simulated_states'].get('yield_elasticity_water')
 
         super(Farm, self).__init__(kwargs.get("id"), kwargs.get("name"))
@@ -223,6 +223,43 @@ class Farm(WaterUser):
 
         return calibrate
 
+    def write_farm_dict(self, fname):
+        """Dumps farm information to a dictionary and writes it to fname"""
+
+        farm_dic = {
+            "id": str(self.id),
+            "name": str(self.name),
+            "crop_list": self.crop_list,
+            "input_list": self.input_list,
+            "parameters": {
+                "sigmas": self.sigmas,
+                "deltas": self.deltas,
+                "betas": self.betas,
+                "mus": self.mus,
+                "first_stage_lambda": self.first_stage_lambda,
+                "lambdas_land": self.lambdas_land
+            },
+            "constraints": {
+                "land:": [-1],
+                "water": [-1]
+            },
+            "simulated_states": {
+                "used_land": self.landsim,
+                "used_water": self.watersim,
+                "supply_elasticity_eta": self.etasim,
+                "yields": self.ysim,
+                "yield_elasticity_water": self.ysim_w
+            },
+            "normalization_refs": {
+                "reference_et": [25],
+                "reference_prices": [5.33, 112, 112, 121.85, 6.86, 6.86, 8.02, 6.20],
+                "reference_yields": [52.56, 2.11, 2.11, 1.57, 29.01, 63.63, 29, 70.37]
+            }
+        }
+
+        with open(fname, 'w') as file:
+            file.write(json.dumps(farm_dic))
+
     def simulate(self):
         pass
 
@@ -247,14 +284,20 @@ class Farm(WaterUser):
         :return:
         """
 
-        """
-        self._set_reference_observations(**kwargs)
+        # set reference observations, solve nonlinear program and return results
+        res = self._set_reference_observations(**kwargs)()
 
-        self.first_stage_lambda = pars[-1]  # first stage lambda always the last parameter
-        pars2 = pars[:-1].reshape(-1, prices.size).T
-        self.deltas = pars2[:, 0]
-        self.betas = pars2[:, 1:3]
-        self.mus = pars2[:, 3]
-        self.lambdas = pars2[:, 4:]
-        """
-        pass
+        if res.success:
+
+            # retrieve optimized parameters, parse them and update member parameter variables
+            pars = res['x']
+
+            # Assign optimal values to Farm object
+            self.first_stage_lambda = pars[-1]  # first stage lambda always the last parameter
+            pars2 = pars[:-1].reshape(-1, len(self.crop_list)).T
+            self.deltas = pars2[:, 0]
+            self.betas = pars2[:, 1:3]
+            self.mus = pars2[:, 3]
+            self.lambdas_land = pars2[:, 4:]
+
+        return res

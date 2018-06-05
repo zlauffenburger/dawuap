@@ -87,9 +87,9 @@ class TestFarm(object):
         with open('test_data/Farms.json') as json_farms:
             farms = json.load(json_farms)
 
-        farm1 = farms['farms'][0]
+        self.farm1 = farms['farms'][0]
 
-        self.a = econfuncs.Farm(**farm1)
+        self.a = econfuncs.Farm(**self.farm1)
 
     @classmethod
     def teardown_class(cls):
@@ -210,12 +210,33 @@ class TestFarm(object):
         print res
         nose.tools.assert_equals(res.success, True)
 
+    def test_calibrate(self):
+        observs = {
+            'eta': self.eta,
+            'ybar': self.ybar,
+            'xbar': self.xbar,
+            'ybar_w': self.ybar_w,
+            'prices': self.prices,
+            'costs': self.costs
+        }
 
+        pmp = TestFarm.a.calibrate(**observs)
 
+        print pmp
+        nose.tools.assert_equals(pmp.success, True)
 
+    def test_write_farm_dict(self):
+        ref_dic = self.farm1
 
+        def getshape(d):
+            if isinstance(d, dict):
+                return {k: getshape(d[k]) for k in d}
+            else:
+                # Replace all non-dict values with None.
+                return None
 
+        self.a.write_farm_dict('test_data/test_farm.json')
 
-
-
-
+        with open('test_data/test_farm.json') as json_farms:
+            written_dic = json.load(json_farms)
+        nose.tools.assert_equal(getshape(ref_dic), getshape(written_dic))
