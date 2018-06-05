@@ -34,19 +34,19 @@ class TestFarm(object):
         self.eta = np.array([.35, 0.29, 0.29, 1.33, 0.38, 0.38, 0.35, 0.35])
         self.sigma = 0.5
 
-        self.deltas = np.array([0.276, 0.227, 0.225, 0.620, 0.304, 0.276, 0.261, 0.387])
-        self.betas = np.array([[0.418, 0.582],
-                               [0.016, 0.984],
-                               [0.002, 0.998],
-                               [0.217, 0.783],
-                               [0.448, 0.552],
-                               [0.126, 0.874],
-                               [0.402, 0.598],
-                               [0.522, 0.478]])
+        self.deltas = np.array([0.276, 0.227, 0.225, 0.574, 0.299, 0.276, 0.261, 0.507])
+        self.betas = np.array([[0.947, 0.053],
+                               [0.288, 0.712],
+                               [0.053, 0.947],
+                               [0.858, 0.142],
+                               [0.952, 0.048],
+                               [0.782, 0.218],
+                               [0.944, 0.056],
+                               [0.974, 0.026]])
 
         self.mus = np.array([0.153, 0.082, 0.056, 0.327, 0.306, 0.038, 0.070, 0.427])
-        self.first_stage_lambda = np.array([0])
-        self.lambdas_land = np.array([[0.563, 0.002, -0.804, 0.136, 0.369, 0.227, 0.436, 0.663],
+        self.first_stage_lambda = np.array([-0.165])
+        self.lambdas_land = np.array([[-0.076, -0.636, -1.443, -0.503, -0.270, -0.411, -0.202, 0.024],
                                  [0, 0, -6.482, 0, 0, -2.688, 0, 0]]).T
 
         self.obs_land = np.array([0.1220, 0.0250, 0.0078, 0.0328, 0.1636, 0.0051, 0.0189, 0.6247])
@@ -137,7 +137,7 @@ class TestFarm(object):
             np.array(TestFarm.ybar_w),
             np.array(TestFarm.qbar),
             np.array(TestFarm.prices)),
-            TestFarm.eta)
+            TestFarm.eta, rtol=1e-2)
 
     def test_y_bar_w_sim(self):
         # tests function eta for calibrated delta values such that simulated eta with given
@@ -149,7 +149,7 @@ class TestFarm(object):
             np.array(beta),
             np.array(delta),
             np.array(TestFarm.xbar)),
-            TestFarm.ybar_w)
+            TestFarm.ybar_w, rtol=1e-2)
 
     def test_prod_func(self):
         # tests production function for calibrated mu values such that simulated production with given
@@ -164,7 +164,7 @@ class TestFarm(object):
             np.array(delta),
             np.array(mu),
             np.array(TestFarm.xbar)),
-            TestFarm.ybar * TestFarm.xbar[:, -1])
+            TestFarm.ybar * TestFarm.xbar[:, 0], rtol=1e-2)
 
     def test_first_stage_lambda_land_lhs(self):
         # test optimality condition for land shadow price (lambda).
@@ -192,7 +192,7 @@ class TestFarm(object):
 
         np.testing.assert_allclose(
             TestFarm.a._first_stage_lambda_land_lhs(lambda_opt['x'], p, c, delta, qbar, ybarw, xbar),
-            np.sum(2 * xbar[:, 0] * p * qbar * ybarw), rtol=1e-5)
+            np.sum(2 * xbar[:, 0] * p * qbar * ybarw), rtol=1e-2)
 
     def test_set_reference_observations(self):
 

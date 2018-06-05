@@ -77,7 +77,7 @@ class Farm(WaterUser):
         b = xbar[:, 0]**2 / (p * qbar)
         num = b / (delta * (1 - delta))
         dem = np.sum(num + (sigmas * b * ybar_w / (delta * (delta - ybar_w))))
-        return delta / (1 - delta) #* (1 - (num/dem))
+        return delta / (1 - delta) * (1 - (num/dem))
 
     def _y_bar_w_sim(self, sigmas, beta, delta, xbar):
         """
@@ -178,7 +178,7 @@ class Farm(WaterUser):
             rhs = self._observed_activity(prices, eta, ybar_w, ybar, xbar)
 
             lhs = np.hstack((
-                self._eta_sim(deltas, xbar, ybar_w, qbar, prices),
+                self._eta_sim(sigmas, deltas, xbar, ybar_w, qbar, prices),
                 self._y_bar_w_sim(betas, deltas, xbar),
                 self.production_function(betas, deltas, mus, xbar),
                 self._convex_sum_constraint(betas),
