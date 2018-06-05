@@ -62,7 +62,8 @@ class Farm(WaterUser):
             raise ValueError('calibration criteria 2'
                              'for farm %i with name %s failed' % (self.id, self.name))
 
-    def _eta_sim(self, sigmas, delta, xbar, ybar_w, qbar, p):
+    @staticmethod
+    def _eta_sim(sigmas, delta, xbar, ybar_w, qbar, p):
         """
         Simulated exogenous supply elasticities (eta) as a function of observed and prescribed parameters
 
@@ -79,7 +80,8 @@ class Farm(WaterUser):
         dem = np.sum(num + (sigmas * b * ybar_w / (delta * (delta - ybar_w))))
         return delta / (1 - delta) * (1 - (num/dem))
 
-    def _y_bar_w_sim(self, sigmas, beta, delta, xbar):
+    @staticmethod
+    def _y_bar_w_sim(sigmas, beta, delta, xbar):
         """
         Simualted yield elasticity (ybar_w) with respect to water
 
@@ -90,7 +92,8 @@ class Farm(WaterUser):
         den = np.diag(np.dot(beta, xbar.T**r))
         return delta * num/den
 
-    def production_function(self, sigmas, beta, delta, mu, xbar):
+    @staticmethod
+    def production_function(sigmas, beta, delta, mu, xbar):
         """
         Constant elasticity of substitution production function
 
@@ -100,7 +103,8 @@ class Farm(WaterUser):
         beta = beta.clip(min=0, max=1)
         return mu * np.diag(np.dot(beta, xbar.T**r))**(delta/r)
 
-    def _first_stage_lambda_land_lhs(self, lambda_land, prices, costs, delta, qbar, y_bar_w, xbar):
+    @staticmethod
+    def _first_stage_lambda_land_lhs(lambda_land, prices, costs, delta, qbar, y_bar_w, xbar):
         """
         First order optimality condition for the calibration of the land shadow value.
         Shadow value is calibrated to observed states when the function returns 0
@@ -124,18 +128,21 @@ class Farm(WaterUser):
 
         return np.sum(condition)
 
-    def _lambda_land_water_lhs(self, lambda_land, first_stage_lambda, costs, xbar):
+    @staticmethod
+    def _lambda_land_water_lhs(lambda_land, first_stage_lambda, costs, xbar):
 
         l = np.array([first_stage_lambda, 0])
         rhs_lambdas = (costs + lambda_land + l) * xbar
 
         return rhs_lambdas
 
-    def _convex_sum_constraint(self, betas):
+    @staticmethod
+    def _convex_sum_constraint(betas):
 
         return betas.sum(axis=1)
 
-    def _observed_activity(self, prices, eta, ybar_w, ybar, xbar):
+    @staticmethod
+    def _observed_activity(prices, eta, ybar_w, ybar, xbar):
 
         qbar = ybar * xbar[:, 0]
 
@@ -171,10 +178,11 @@ class Farm(WaterUser):
 
             first_stage_lambda = pars[-1] # first stage lambda always the last parameter
             pars2 = pars[:-1].reshape(-1, prices.size).T
-            deltas = pars2[:, 0]
-            betas = pars2[:, 1:3]
-            mus = pars2[:, 3]
-            lambdas = pars2[:, 4:]
+            sigmas = pars2[:, 0]
+            deltas = pars2[:, 1]
+            betas = pars2[:, 2:4]
+            mus = pars2[:, 4]
+            lambdas = pars2[:, 5:]
             rhs = self._observed_activity(prices, eta, ybar_w, ybar, xbar)
 
             lhs = np.hstack((
@@ -188,7 +196,8 @@ class Farm(WaterUser):
             return lhs - rhs
 
         def calibrate():
-            x = np.hstack((self.deltas, self.betas.T.flatten(), self.mus, self.lambdas_land.T.flatten(), self.first_stage_lambda))
+            x = np.hstack((self.sigmas, self.deltas, self.betas.T.flatten(),
+                           self.mus, self.lambdas_land.T.flatten(), self.first_stage_lambda))
             return sci.root(func, x, method='lm')
 
         return calibrate
