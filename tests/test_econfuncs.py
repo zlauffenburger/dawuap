@@ -58,7 +58,7 @@ class TestFarm(object):
         self.xbar = np.array([self.obs_land, self.obs_water]).T
 
         self.prices = np.array([5.82, 125, 125, 111.72, 4.80, 4.80, 6.88, 4.59])
-        self.prices /=self.refprices # normalize prices
+        self.prices /= self.refprices # normalize prices
 
         self.costs = np.array([[111.56, 193.95, 390.02, 187.38, 120.80, 365.33, 135.13, 135.13],
                                [0, 0, 65.67, 0, 0, 48.20, 0, 0]]).T

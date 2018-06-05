@@ -142,12 +142,16 @@ class Farm(WaterUser):
         return np.sum(condition)
 
     @staticmethod
-    def _lambda_land_water_lhs(lambda_land, first_stage_lambda, costs, xbar):
+    def _lambda_land_water_lhs(lambda_land, first_stage_lambda, deltas, prices, costs, qbar, xbar):
 
-        l = np.array([first_stage_lambda, 0])
-        rhs_lambdas = (costs + lambda_land + l) * xbar
+        fstStgLbda = np.array([first_stage_lambda, 0])
+        # this following term only applies to land, hence 0 on the water column
+        p_qbar_delta = np.asarray(prices * qbar * deltas)[:, np.newaxis]
+        p_qbar_delta = np.append(p_qbar_delta, np.zeros_like(p_qbar_delta), axis=1)
 
-        return rhs_lambdas
+        lhs_lambdas = (costs + lambda_land + fstStgLbda) * xbar - p_qbar_delta
+
+        return lhs_lambdas
 
     @staticmethod
     def _convex_sum_constraint(betas):
@@ -208,7 +212,7 @@ class Farm(WaterUser):
                 self.production_function(sigmas, betas, deltas, mus, xbar),
                 self._convex_sum_constraint(betas),
                 self._first_stage_lambda_land_lhs(first_stage_lambda, prices, costs, deltas, qbar, ybar_w, xbar),
-                self._lambda_land_water_lhs(lambdas, first_stage_lambda, costs, xbar).T.flatten()))
+                self._lambda_land_water_lhs(lambdas, first_stage_lambda, deltas, prices, costs, qbar, xbar).T.flatten()))
 
             return lhs - rhs
 
@@ -242,6 +246,8 @@ class Farm(WaterUser):
 
         :return:
         """
+
+        """
         self._set_reference_observations(**kwargs)
 
         self.first_stage_lambda = pars[-1]  # first stage lambda always the last parameter
@@ -250,5 +256,5 @@ class Farm(WaterUser):
         self.betas = pars2[:, 1:3]
         self.mus = pars2[:, 3]
         self.lambdas = pars2[:, 4:]
-
-
+        """
+        pass
