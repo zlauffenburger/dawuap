@@ -67,14 +67,15 @@ class Farm(WaterUser):
     @staticmethod
     def _eta_sim(sigmas, delta, xbar, ybar_w, qbar, p):
         """
-        Simulated exogenous supply elasticities (eta) as a function of observed and prescribed parameters
+        Simulates exogenous supply elasticities (eta) as a function
+         of observed land and water allocations and parameters
 
-        :param delta: CES production function parameter, 1D array
-        :param xbar: Observed resource allocations, 2D array
-        :param ybar_w: observed
-        :param qbar:
-        :param p:
-        :return:
+        :param delta: CES production function returns-to-scale parameter, 1D array
+        :param xbar: Observed resource allocations, 2D array (ncrops x nresources)
+        :param ybar_w: Yield elasticity with respect to water use, 1D array
+        :param qbar: Observed total production for each crop
+        :param p: Observed crop prices received by farmer for each crop, 1D array
+        :return: vector of simulated supply elasticities of the same shape as delta
         """
 
         b = xbar[:, 0]**2 / (p * qbar)
@@ -85,9 +86,14 @@ class Farm(WaterUser):
     @staticmethod
     def _y_bar_w_sim(sigmas, beta, delta, xbar):
         """
-        Simualted yield elasticity (ybar_w) with respect to water
+        Simulates yield elasticity with respect to water (ybar_w) as a function of observed
+        land and water allocation and parameters.
 
-        :return:
+        :param sigmas: Elasticity of substitution parameter.
+        :param beta: CES shares parameter, 2D array (ncrops x nresources).
+        :param delta: CES production function returns-to-scale parameter, 1D array.
+        :return: Vector of simulated yield elasticities with respect to water
+         of the same shape as delta
         """
         r = rho(sigmas)
         num = beta[:, -1] * xbar[:, -1]**r
@@ -99,7 +105,12 @@ class Farm(WaterUser):
         """
         Constant elasticity of substitution production function
 
-        :return:
+        :param sigmas: Elasticity of substitution parameter.
+        :param beta: CES shares parameter, 2D array (ncrops x nresources).
+        :param delta: CES production function returns-to-scale parameter, 1D array.
+        :param mu: CES productivity parameter, 1D array.
+        :param xbar: Resource allocation, 2D array (ncrops, nresources)
+        :return: vector of crop production with same shape as delta
         """
         r = rho(sigmas)
         beta = beta.clip(min=0, max=1)
@@ -140,18 +151,21 @@ class Farm(WaterUser):
 
     @staticmethod
     def _convex_sum_constraint(betas):
+        """sum the columns of CES production function share parameters"""
 
         return betas.sum(axis=1)
 
     @staticmethod
     def _observed_activity(prices, eta, ybar_w, ybar, xbar):
+        """ produce the rhs of optimalizty equation by stacking
+         the vectors of observations in a 1D vector"""
 
         qbar = ybar * xbar[:, 0]
 
         return np.hstack((eta, ybar_w, qbar, np.ones_like(prices), np.sum(2 * xbar[:, 0] * prices * qbar * ybar_w),
                                -prices*qbar*ybar_w, prices*qbar*ybar_w))
 
-    def set_reference_observations(self, **kwargs):
+    def _set_reference_observations(self, **kwargs):
 
         eta = kwargs['eta']
         ybar = kwargs['ybar']
@@ -208,7 +222,33 @@ class Farm(WaterUser):
     def simulate(self):
         pass
 
-    def calibrate(self, xbar, ybar_w):
-        self.xbar = np.array(xbar)
-        self.ybar_w = np.array(ybar_w)
+    def calibrate(self, **kwargs):
+        """Calibrates the economic model of agricultural production.
+
+        :param kwargs:
+            Dictionary with list or arrays of observed agricultural activity:
+
+            :Example:
+
+            ::
+
+            observs = {
+            'eta': [.35, 0.29],
+            'ybar': [35, 2.2],
+            'xbar': [[0.1220, 0.0250],[0, 20.]],
+            'ybar_w': [0.06, 0.21],
+            'prices': [5.82, 125],
+            'costs': [111.56, 193.95]}
+
+        :return:
+        """
+        self._set_reference_observations(**kwargs)
+
+        self.first_stage_lambda = pars[-1]  # first stage lambda always the last parameter
+        pars2 = pars[:-1].reshape(-1, prices.size).T
+        self.deltas = pars2[:, 0]
+        self.betas = pars2[:, 1:3]
+        self.mus = pars2[:, 3]
+        self.lambdas = pars2[:, 4:]
+
 

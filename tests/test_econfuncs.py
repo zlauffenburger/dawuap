@@ -205,7 +205,7 @@ class TestFarm(object):
             'costs': self.costs
         }
 
-        pmp = TestFarm.a.set_reference_observations(**observs)
+        pmp = TestFarm.a._set_reference_observations(**observs)
         res = pmp()
         print res
         nose.tools.assert_equals(res.success, True)
