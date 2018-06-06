@@ -161,7 +161,7 @@ class Farm(WaterUser):
 
     @staticmethod
     def _observed_activity(prices, eta, ybar_w, ybar, xbar):
-        """ produce the rhs of optimalizty equation by stacking
+        """ produce the rhs of optimality equation by stacking
          the vectors of observations in a 1D vector"""
 
         qbar = ybar * xbar[:, 0]
@@ -224,7 +224,7 @@ class Farm(WaterUser):
         return calibrate
 
     def write_farm_dict(self, fname):
-        """Dumps farm information to a dictionary and writes it to fname"""
+        """Dumps farm information to a dictionary and returns it and writes it to fname"""
 
         farm_dic = {
             "id": str(self.id),
@@ -232,12 +232,12 @@ class Farm(WaterUser):
             "crop_list": self.crop_list,
             "input_list": self.input_list,
             "parameters": {
-                "sigmas": self.sigmas,
-                "deltas": self.deltas,
-                "betas": self.betas,
-                "mus": self.mus,
-                "first_stage_lambda": self.first_stage_lambda,
-                "lambdas_land": self.lambdas_land
+                "sigmas": self.sigmas.tolist(),
+                "deltas": self.deltas.tolist(),
+                "betas": self.betas.tolist(),
+                "mus": self.mus.tolist(),
+                "first_stage_lambda": self.first_stage_lambda.tolist(),
+                "lambdas_land": self.lambdas_land.tolist()
             },
             "constraints": {
                 "land:": [-1],
@@ -260,18 +260,43 @@ class Farm(WaterUser):
         with open(fname, 'w') as file:
             file.write(json.dumps(farm_dic))
 
-    def simulate(self):
+        return farm_dic
+
+    def simulate(self, **kwargs):
+        """Simulates resource allocation given given the current set of function parameters in the class.
+
+        Parameters
+        ==========
+
+        :param kwargs:
+            Dictionary with lists or arrays of prices, costs and constraints to production.
+
+        :Example:
+
+        ::
+
+            observs = {
+            'prices': [5.82, 125],
+            'costs': [111.56, 193.95],
+            '}
+
+            Farm_obj.simulate(**observs)
+
+        """
         pass
 
     def calibrate(self, **kwargs):
         """Calibrates the economic model of agricultural production.
 
+        Parameters
+        ==========
+
         :param kwargs:
-            Dictionary with list or arrays of observed agricultural activity:
+            Dictionary with lists or arrays of observed agricultural activity:
 
-            :Example:
+        :Example:
 
-            ::
+        ::
 
             observs = {
             'eta': [.35, 0.29],
@@ -280,6 +305,9 @@ class Farm(WaterUser):
             'ybar_w': [0.06, 0.21],
             'prices': [5.82, 125],
             'costs': [111.56, 193.95]}
+
+            Farm_obj.calibrate(**observs)
+
 
         :return:
         """
