@@ -283,7 +283,36 @@ class Farm(WaterUser):
             Farm_obj.simulate(**observs)
 
         """
-        pass
+        prices = kwargs['prices']
+        costs = kwargs['costs']
+
+        def func(res):
+
+            sigmas = self.sigmas
+
+            q = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, res)
+            ybarw = self._y_bar_w_sim(self.sigmas, self.betas, self.deltas, res)
+            pqy = prices*q*ybarw
+
+            lhs = np.hstack((-pqy, pqy))
+
+            rhs = self._lambda_land_water_lhs(self.lambdas_land,
+                                              self.first_stage_lambda,
+                                              self.deltas,
+                                              prices,
+                                              costs,
+                                              q,
+                                              res)
+
+            return lhs - rhs
+
+        x = np.hstack((self.landsim, self.watersim))
+        res = sci.root(func, x, method='lm')
+
+        print res
+
+
+
 
     def calibrate(self, **kwargs):
         """Calibrates the economic model of agricultural production.

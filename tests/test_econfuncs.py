@@ -225,6 +225,15 @@ class TestFarm(object):
         print pmp
         nose.tools.assert_equals(pmp.success, True)
 
+    def test_simulate(self):
+        env = {
+            'prices': self.prices,
+            'costs': self.costs
+        }
+
+        sim = TestFarm.a.simulate(**env)
+        print sim
+
     def test_write_farm_dict(self):
         ref_dic = self.farm1
 
@@ -240,3 +249,4 @@ class TestFarm(object):
         with open('test_data/test_farm.json') as json_farms:
             written_dic = json.load(json_farms)
         nose.tools.assert_equal(getshape(ref_dic), getshape(written_dic))
+
