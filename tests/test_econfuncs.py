@@ -226,13 +226,31 @@ class TestFarm(object):
         nose.tools.assert_equals(pmp.success, True)
 
     def test_simulate(self):
+
+        import scipy.optimize as opt
         env = {
             'prices': self.prices,
-            'costs': self.costs
+            'costs': self.costs,
+            'land_constraint': np.sum(self.obs_land),
+            'water_constraint': np.sum(self.obs_water)
         }
 
         sim = TestFarm.a.simulate(**env)
         print sim
+
+        # Solve maximization problem using scipy
+        def netrevs(x):
+            p = self.prices
+            q = TestFarm.a.production_function(self.sigma, self.betas, self.deltas, self.mus, x)
+            nr = p * q - (self.costs + self.lambdas_land) * x
+            return nr
+
+        ineq_const = {'type': 'ineq',
+                      'fun': lambda x: np.dot}
+
+        res = opt.minimize(netrevs, self.xbar, constraints=)
+
+
 
     def test_write_farm_dict(self):
         ref_dic = self.farm1

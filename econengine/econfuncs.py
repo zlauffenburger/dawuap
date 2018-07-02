@@ -38,11 +38,11 @@ class Farm(WaterUser):
         #self.prices = None
         #self.costs = kwargs.get('costs')  # land and water costs. Array with one row per crop. First column land second column water
 
-        self.landsim = kwargs['simulated_states'].get('used_land')
-        self.watersim = kwargs['simulated_states'].get('used_water')
-        self.etasim = kwargs['simulated_states'].get('supply_elasticity_eta')
-        self.ysim = kwargs['simulated_states'].get('yields')
-        self.ysim_w = kwargs['simulated_states'].get('yield_elasticity_water')
+        self.landsim = np.asarray(kwargs['simulated_states'].get('used_land'))
+        self.watersim = np.asarray(kwargs['simulated_states'].get('used_water'))
+        self.etasim = np.asarray(kwargs['simulated_states'].get('supply_elasticity_eta'))
+        self.ysim = np.asarray(kwargs['simulated_states'].get('yields'))
+        self.ysim_w = np.asarray(kwargs['simulated_states'].get('yield_elasticity_water'))
 
         super(Farm, self).__init__(kwargs.get("id"), kwargs.get("name"))
 
@@ -244,11 +244,11 @@ class Farm(WaterUser):
                 "water": [-1]
             },
             "simulated_states": {
-                "used_land": self.landsim,
-                "used_water": self.watersim,
-                "supply_elasticity_eta": self.etasim,
-                "yields": self.ysim,
-                "yield_elasticity_water": self.ysim_w
+                "used_land": self.landsim.tolist(),
+                "used_water": self.watersim.tolist(),
+                "supply_elasticity_eta": self.etasim.tolist(),
+                "yields": self.ysim.tolist(),
+                "yield_elasticity_water": self.ysim_w.tolist()
             },
             "normalization_refs": {
                 "reference_et": [25],
@@ -278,41 +278,60 @@ class Farm(WaterUser):
             observs = {
             'prices': [5.82, 125],
             'costs': [111.56, 193.95],
+            'land_constraint': 100,
+            'water_constraint': 100,
             '}
 
             Farm_obj.simulate(**observs)
 
         """
         prices = kwargs['prices']
+        if prices.ndim < 2:
+            prices = prices[:, np.newaxis]
+
         costs = kwargs['costs']
+        L = kwargs['land_constraint']
+        W = kwargs['water_constraint']
+        LW = np.hstack((L, W))
 
         def func(res):
 
-            sigmas = self.sigmas
+            num_crops = len(self.crop_list)
+            num_inputs = len(self.input_list)
 
-            q = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, res)
-            ybarw = self._y_bar_w_sim(self.sigmas, self.betas, self.deltas, res)
-            pqy = prices*q*ybarw
+            # parse inputs vector into convenient variables
+            # first input resources for each crop (matrix x)
+            # then simulated production (q)
+            # finally lagrange multipliers
+            x = res[:num_crops * num_inputs].reshape(num_inputs, num_crops).T
+            q = res[x.size:(x.size + num_crops)][:, np.newaxis]
+            lbdas = res[(x.size + q.size):]
 
-            lhs = np.hstack((-pqy, pqy))
+            # build the left hand side of system of equations
+            r = rho(self.sigmas)[:, np.newaxis]
+            num = prices * self.deltas[:, np.newaxis] * q * self.betas * x ** r
+            den = np.diag(np.dot(self.betas, (x**r).T))
+            drevdx = num / den[:, np.newaxis]
 
-            rhs = self._lambda_land_water_lhs(self.lambdas_land,
-                                              self.first_stage_lambda,
-                                              self.deltas,
-                                              prices,
-                                              costs,
-                                              q,
-                                              res)
+            lhs = np.hstack((drevdx.T.flatten(), q.flatten(), x.sum(axis=0)))
+
+            # build right hand side of system of equations
+
+            dcdx = (costs + self.lambdas_land + lbdas) * x
+            qbar = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x)
+
+            rhs = np.hstack((dcdx.T.flatten(), qbar, LW))
 
             return lhs - rhs
 
-        x = np.hstack((self.landsim, self.watersim))
+        # prepare initial guesses
+
+        q = self.ysim * self.landsim
+        lbdas = np.zeros(len(self.input_list))
+        x = np.hstack((self.landsim, self.watersim, q, lbdas))
         res = sci.root(func, x, method='lm')
 
         print res
-
-
-
 
     def calibrate(self, **kwargs):
         """Calibrates the economic model of agricultural production.
