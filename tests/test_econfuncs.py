@@ -240,15 +240,19 @@ class TestFarm(object):
 
         # Solve maximization problem using scipy
         def netrevs(x):
+            x = x.T.reshape(8, 2)
             p = self.prices
             q = TestFarm.a.production_function(self.sigma, self.betas, self.deltas, self.mus, x)
-            nr = p * q - (self.costs + self.lambdas_land) * x
-            return nr
+            nr = p * q - np.sum((self.costs + self.lambdas_land) * x, axis=1)
+            print x
+            return -nr.sum()
 
         ineq_const = {'type': 'ineq',
-                      'fun': lambda x: np.dot}
+                      'fun': lambda x: self.xbar.sum(axis=0) - x.reshape(8, 2).sum(axis=0),
+                    }
 
-        res = opt.minimize(netrevs, self.xbar, constraints=)
+        res = opt.minimize(netrevs, self.xbar, method='SLSQP', constraints=[ineq_const], bounds=[(0, None)]*self.xbar.size)
+        print res
 
 
 
