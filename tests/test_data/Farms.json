@@ -5,6 +5,7 @@
       "name": "Ravalli",
       "crop_list": ["dryland barley", "dryland alfalfa", "irrigated alfalfa", "dryland peas",
         "dryland spring wheat", "irrigated spring wheat", "dryland durum wheat", "dryland winter wheat"],
+      "irrigation_mask": [0, 0, 1, 0, 0, 1, 0, 0 ],
       "input_list": ["land","water"],
       "parameters": {
         "sigmas": [0.5],

@@ -229,6 +229,7 @@ class TestFarm(object):
 
         import scipy.optimize as opt
         env = {
+            'evapotranspiration': self.et0,
             'prices': self.prices,
             'costs': self.costs,
             'land_constraint': np.sum(self.obs_land),
@@ -237,22 +238,24 @@ class TestFarm(object):
 
         sim = TestFarm.a.simulate(**env)
         print sim
+        print sim.x[:16].reshape(2, 8).T
 
         # Solve maximization problem using scipy
         def netrevs(x):
             x = x.T.reshape(8, 2)
             p = self.prices
-            q = TestFarm.a.production_function(self.sigma, self.betas, self.deltas, self.mus, x)
+            q = TestFarm.a.production_function(self.sigma, self.betas, self.deltas, self.mus, x, self.et0/self.refet)
             nr = p * q - np.sum((self.costs + self.lambdas_land) * x, axis=1)
-            print x
             return -nr.sum()
 
-        ineq_const = {'type': 'ineq',
-                      'fun': lambda x: self.xbar.sum(axis=0) - x.reshape(8, 2).sum(axis=0),
-                    }
+        eq_const = {'type': 'eq',
+                      'fun': lambda x: -self.xbar.sum(axis=0) + x.reshape(8, 2).sum(axis=0)}
 
-        res = opt.minimize(netrevs, self.xbar, method='SLSQP', constraints=[ineq_const], bounds=[(0, None)]*self.xbar.size)
+        res = opt.minimize(netrevs, self.xbar, method='SLSQP', constraints=[eq_const],
+                           bounds=[(0.001, None)]*self.xbar.size)
         print res
+
+        print res.x[:16].reshape(8, 2)
 
 
 

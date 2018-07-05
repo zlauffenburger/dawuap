@@ -1,3 +1,4 @@
+from __future__ import division
 from water_user import WaterUser
 import numpy as np
 import json
@@ -24,6 +25,7 @@ class Farm(WaterUser):
 
         self.crop_list = kwargs.get('crop_list')
         self.input_list = kwargs.get('input_list')
+        self.irr = np.asanyarray(kwargs.get('irrigation_mask'), dtype=bool)
 
         self.sigmas = np.asarray(kwargs['parameters'].get('sigmas'))
         if len(self.sigmas) == 1:
@@ -43,6 +45,10 @@ class Farm(WaterUser):
         self.etasim = np.asarray(kwargs['simulated_states'].get('supply_elasticity_eta'))
         self.ysim = np.asarray(kwargs['simulated_states'].get('yields'))
         self.ysim_w = np.asarray(kwargs['simulated_states'].get('yield_elasticity_water'))
+
+        self.ref_et = np.asarray(kwargs['normalization_refs'].get('reference_et'))
+        self.ref_prices = np.asarray(kwargs['normalization_refs'].get('reference_prices'))
+        self.ref_yields = np.asarray(kwargs['normalization_refs'].get('reference_yields'))
 
         super(Farm, self).__init__(kwargs.get("id"), kwargs.get("name"))
 
@@ -101,7 +107,7 @@ class Farm(WaterUser):
         return delta * num/den
 
     @staticmethod
-    def production_function(sigmas, beta, delta, mu, xbar):
+    def production_function(sigmas, beta, delta, mu, xbar, et0=[0]):
         """
         Constant elasticity of substitution production function
 
@@ -110,9 +116,13 @@ class Farm(WaterUser):
         :param delta: CES production function returns-to-scale parameter, 1D array.
         :param mu: CES productivity parameter, 1D array.
         :param xbar: Resource allocation, 2D array (ncrops, nresources)
+        :param et0: evapotranspiration, defaults to zero
         :return: vector of crop production with same shape as delta
         """
         r = rho(sigmas)
+
+        # adds evaporatranspiration to crop water if irrigation and et are dissagregated
+        xbar[:, -1] += np.asarray(et0)
         beta = beta.clip(min=0, max=1)
         return mu * np.diag(np.dot(beta, xbar.T**r))**(delta/r)
 
@@ -276,6 +286,7 @@ class Farm(WaterUser):
         ::
 
             observs = {
+            'evapotranspiration': [5., 5.]
             'prices': [5.82, 125],
             'costs': [111.56, 193.95],
             'land_constraint': 100,
@@ -285,6 +296,8 @@ class Farm(WaterUser):
             Farm_obj.simulate(**observs)
 
         """
+
+        et0 = kwargs['evapotranspiration']/self.ref_et
         prices = kwargs['prices']
         if prices.ndim < 2:
             prices = prices[:, np.newaxis]
@@ -304,34 +317,40 @@ class Farm(WaterUser):
             # then simulated production (q)
             # finally lagrange multipliers
             x = res[:num_crops * num_inputs].reshape(num_inputs, num_crops).T
+            xstar = x
+            xstar[:, -1] += et0
             q = res[x.size:(x.size + num_crops)][:, np.newaxis]
-            lbdas = res[(x.size + q.size):]
+            lbdas = res[(x.size + q.size): (x.size + q.size) + num_inputs]
+            psi = res[((x.size + q.size) + lbdas.size):][:, np.newaxis]
 
             # build the left hand side of system of equations
             r = rho(self.sigmas)[:, np.newaxis]
-            num = prices * self.deltas[:, np.newaxis] * q * self.betas * x ** r
-            den = np.diag(np.dot(self.betas, (x**r).T))
+            num = prices * self.deltas[:, np.newaxis] * q * self.betas * (xstar ** r)
+            den = np.diag(np.dot(self.betas, (xstar**r).T))
             drevdx = num / den[:, np.newaxis]
 
-            lhs = np.hstack((drevdx.T.flatten(), q.flatten(), x.sum(axis=0)))
+            lhs = np.hstack((drevdx.T.flatten(), q.flatten(), x.sum(axis=0), x[:, -1]))
 
             # build right hand side of system of equations
 
-            dcdx = (costs + self.lambdas_land + lbdas) * x
-            qbar = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x)
+            dcdx = (costs + self.lambdas_land + lbdas + psi) * xstar
+            qbar = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x, et0)
 
-            rhs = np.hstack((dcdx.T.flatten(), qbar, LW))
+            xc = x[:, -1]
+            xc[~self.irr] = 0
+            rhs = np.hstack((dcdx.T.flatten(), qbar, LW, xc))
 
             return lhs - rhs
 
         # prepare initial guesses
 
-        q = self.ysim * self.landsim
-        lbdas = np.zeros(len(self.input_list))
-        x = np.hstack((self.landsim, self.watersim, q, lbdas))
-        res = sci.root(func, x, method='lm')
+        q = self.ysim/self.ref_yields * self.landsim
+        lam = np.zeros(len(self.input_list))
+        lam_irr = np.zeros(len(self.crop_list))
+        x0 = np.hstack((self.landsim, self.watersim, q, lam, lam_irr))
+        output = sci.root(func, x0, method='lm')
 
-        print res
+        return output
 
     def calibrate(self, **kwargs):
         """Calibrates the economic model of agricultural production.
