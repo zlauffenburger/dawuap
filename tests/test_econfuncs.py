@@ -243,21 +243,21 @@ class TestFarm(object):
         # Solve maximization problem using scipy
         def netrevs(x):
             x = x.T.reshape(8, 2)
+
             p = self.prices
-            q = TestFarm.a.production_function(self.sigma, self.betas, self.deltas, self.mus, x, self.et0/self.refet)
+            q = TestFarm.a.production_function(self.sigma, self.betas, self.deltas, self.mus,
+                                               x, self.et0/self.refet)
             nr = p * q - np.sum((self.costs + self.lambdas_land) * x, axis=1)
             return -nr.sum()
 
-        eq_const = {'type': 'eq',
-                      'fun': lambda x: -self.xbar.sum(axis=0) + x.reshape(8, 2).sum(axis=0)}
-
-        res = opt.minimize(netrevs, self.xbar, method='SLSQP', constraints=[eq_const],
+        eq_const1 = {'type': 'eq',
+                      'fun': lambda x: -self.xbar.sum(axis=0) + x.T.reshape(8, 2).sum(axis=0)}
+        eq_const2 = {'type': 'eq',
+                      'fun': lambda x: x.T.reshape(8, 2)[:, -1] - x.T.reshape(8, 2)[:, -1] * ~TestFarm.a.irr}
+        res = opt.minimize(netrevs, self.xbar, method='SLSQP', constraints=[eq_const1, eq_const2],
                            bounds=[(0.001, None)]*self.xbar.size)
         print res
-
-        print res.x[:16].reshape(8, 2)
-
-
+        print res.x.reshape(8, 2)
 
     def test_write_farm_dict(self):
         ref_dic = self.farm1

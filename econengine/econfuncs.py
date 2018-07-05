@@ -241,6 +241,7 @@ class Farm(WaterUser):
             "name": str(self.name),
             "crop_list": self.crop_list,
             "input_list": self.input_list,
+            "irrigation_mask": self.irr,
             "parameters": {
                 "sigmas": self.sigmas.tolist(),
                 "deltas": self.deltas.tolist(),
@@ -344,10 +345,10 @@ class Farm(WaterUser):
 
         # prepare initial guesses
 
-        q = self.ysim/self.ref_yields * self.landsim
+        q0 = self.ysim/self.ref_yields * self.landsim
         lam = np.zeros(len(self.input_list))
         lam_irr = np.zeros(len(self.crop_list))
-        x0 = np.hstack((self.landsim, self.watersim, q, lam, lam_irr))
+        x0 = np.hstack((self.landsim, self.watersim, q0, lam, lam_irr))
         output = sci.root(func, x0, method='lm')
 
         return output
