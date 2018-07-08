@@ -124,7 +124,8 @@ class Farm(WaterUser):
         # adds evaporatranspiration to crop water if irrigation and et are dissagregated
         xbar[:, -1] += np.asarray(et0)
         beta = beta.clip(min=0, max=1)
-        return mu * np.diag(np.dot(beta, xbar.T**r))**(delta/r)
+        x = xbar.clip(min=0.0001)
+        return mu * np.diag(np.dot(beta, x.T**r))**(delta/r)
 
     @staticmethod
     def _first_stage_lambda_land_lhs(lambda_land, prices, costs, delta, qbar, y_bar_w, xbar):
@@ -241,7 +242,7 @@ class Farm(WaterUser):
             "name": str(self.name),
             "crop_list": self.crop_list,
             "input_list": self.input_list,
-            "irrigation_mask": self.irr,
+            "irrigation_mask": self.irr.tolist(),
             "parameters": {
                 "sigmas": self.sigmas.tolist(),
                 "deltas": self.deltas.tolist(),

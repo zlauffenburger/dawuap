@@ -1,3 +1,4 @@
+from __future__ import division
 from econengine import econfuncs
 import numpy as np
 import json
@@ -25,7 +26,7 @@ class TestFarm(object):
         self.name = "Test Farm"
 
         # reference values to adimensionalize inputs
-        self.refet = 25 # Reference et for transpiration
+        self.refet = 25. # Reference et for transpiration
         self.refprices = np.array([5.33, 112, 112, 121.85, 6.86, 6.86, 8.02, 6.20])
         self.refyields = np.array([52.56, 2.11, 2.11, 1.57, 29.01, 63.63, 29, 70.37])
         self.acrev = self.refprices * self.refyields # reference per-acre revenue
@@ -46,12 +47,18 @@ class TestFarm(object):
 
         self.mus = np.array([0.153, 0.082, 0.056, 0.327, 0.306, 0.038, 0.070, 0.427])
         self.first_stage_lambda = np.array([-0.165])
-        self.lambdas_land = np.array([[-0.076, -0.636, -1.443, -0.503, -0.270, -0.411, -0.202, 0.024],
-                                 [0, 0, -6.482, 0, 0, -2.688, 0, 0]]).T
+        self.lambdas_land = np.array([[0.563, 0],
+                             [0.002, 0],
+                             [-0.804, -6.482],
+                             [0.136, 0],
+                             [0.369, 0],
+                             [0.227, -2.699],
+                             [0.436, 0],
+                             [0.663, 0]])
 
         self.obs_land = np.array([0.1220, 0.0250, 0.0078, 0.0328, 0.1636, 0.0051, 0.0189, 0.6247])
 
-        self.et0 = 5
+        self.et0 = 5.
         self.obs_water = (np.array([0, 0, 27.25, 0, 0, 20., 0, 0]) + self.et0) * self.obs_land
         self.obs_water /= self.refet
 
@@ -211,6 +218,7 @@ class TestFarm(object):
         nose.tools.assert_equals(res.success, True)
 
     def test_calibrate(self):
+
         observs = {
             'eta': self.eta,
             'ybar': self.ybar,
@@ -242,22 +250,26 @@ class TestFarm(object):
 
         # Solve maximization problem using scipy
         def netrevs(x):
-            x = x.T.reshape(8, 2)
 
+            x = x.T.reshape(8, 2)
             p = self.prices
             q = TestFarm.a.production_function(self.sigma, self.betas, self.deltas, self.mus,
                                                x, self.et0/self.refet)
+            q = self.ybar * self.obs_land
             nr = p * q - np.sum((self.costs + self.lambdas_land) * x, axis=1)
             return -nr.sum()
 
         eq_const1 = {'type': 'eq',
-                      'fun': lambda x: -self.xbar.sum(axis=0) + x.T.reshape(8, 2).sum(axis=0)}
+                      'fun': lambda x: x.T.reshape(8, 2).sum(axis=0) - self.xbar.sum(axis=0) }
         eq_const2 = {'type': 'eq',
-                      'fun': lambda x: x.T.reshape(8, 2)[:, -1] - x.T.reshape(8, 2)[:, -1] * ~TestFarm.a.irr}
-        res = opt.minimize(netrevs, self.xbar, method='SLSQP', constraints=[eq_const1, eq_const2],
-                           bounds=[(0.001, None)]*self.xbar.size)
+                      'fun': lambda x: np.extract(~TestFarm.a.irr, x.reshape(8, 2)[:, -1]) - 0}
+
+        res = opt.minimize(netrevs, self.xbar, method='SLSQP', constraints=[eq_const1],
+                           bounds=[(0.00, None)]*self.xbar.size)
         print res
         print res.x.reshape(8, 2)
+
+        np.testing.assert_allclose( sim.x[:16].reshape(2, 8).T, res.x.reshape(8, 2), rtol=1e-2)
 
     def test_write_farm_dict(self):
         ref_dic = self.farm1
