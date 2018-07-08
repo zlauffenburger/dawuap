@@ -27,6 +27,11 @@ class Farm(WaterUser):
         self.input_list = kwargs.get('input_list')
         self.irr = np.asanyarray(kwargs.get('irrigation_mask'), dtype=bool)
 
+        self.ref_et = np.asarray(kwargs['normalization_refs'].get('reference_et'))
+        self.ref_prices = np.asarray(kwargs['normalization_refs'].get('reference_prices'))
+        self.ref_yields = np.asarray(kwargs['normalization_refs'].get('reference_yields'))
+        self.ref_land = np.asarray(kwargs['simulated_states'].get('used_land')).sum()
+
         self.sigmas = np.asarray(kwargs['parameters'].get('sigmas'))
         if len(self.sigmas) == 1:
             self.sigmas = np.repeat(self.sigmas, len(self.crop_list))
@@ -40,17 +45,41 @@ class Farm(WaterUser):
         #self.prices = None
         #self.costs = kwargs.get('costs')  # land and water costs. Array with one row per crop. First column land second column water
 
-        self.landsim = np.asarray(kwargs['simulated_states'].get('used_land'))
-        self.watersim = np.asarray(kwargs['simulated_states'].get('used_water'))
+        self._landsim = np.asarray(kwargs['simulated_states'].get('used_land')) / self.ref_land
+        self._watersim = np.asarray(kwargs['simulated_states'].get('used_water')) / self.ref_et
         self.etasim = np.asarray(kwargs['simulated_states'].get('supply_elasticity_eta'))
-        self.ysim = np.asarray(kwargs['simulated_states'].get('yields'))
+        self._ysim = np.asarray(kwargs['simulated_states'].get('yields')) / self.ref_yields
         self.ysim_w = np.asarray(kwargs['simulated_states'].get('yield_elasticity_water'))
 
-        self.ref_et = np.asarray(kwargs['normalization_refs'].get('reference_et'))
-        self.ref_prices = np.asarray(kwargs['normalization_refs'].get('reference_prices'))
-        self.ref_yields = np.asarray(kwargs['normalization_refs'].get('reference_yields'))
 
         super(Farm, self).__init__(kwargs.get("id"), kwargs.get("name"))
+
+    @property
+    def landsim(self):
+        return self._landsim * self.ref_land
+
+    @landsim.setter
+    def landsim(self, value):
+        self._landsim = value / self.ref_land
+
+    @property
+    def watersim(self):
+        """Returns un-normalized total simulated water use"""
+        return self._watersim * self.ref_et
+
+    @watersim.setter
+    def watersim(self, value):
+        self._watersim = value / self.ref_et
+
+    @property
+    def ysim(self):
+        """Returns un-normalized simulated crop yields"""
+        return self._ysim * self.ref_yields
+
+    @ysim.setter
+    def ysim(self, value):
+        """Sets simulated yields"""
+        self._ysim = value / self.ref_yields
 
     def _check_calibration_criteria(self, sigmas, eta, xbar, ybar_w, qbar, p):
 
@@ -183,12 +212,17 @@ class Farm(WaterUser):
     def _set_reference_observations(self, **kwargs):
 
         eta = kwargs['eta']
-        ybar = kwargs['ybar']
-        xbar = kwargs['xbar']
+        ybar = kwargs['ybar'] / self.ref_yields
+        landbar = kwargs['obs_land']
+        waterbar = np.asarray(kwargs['obs_water']) / self.ref_et
+        xbar = np.array([landbar, waterbar]).T
         ybar_w = kwargs['ybar_w']
 
-        prices = kwargs['prices']
+        prices = kwargs['prices'] / self.ref_prices
         costs = kwargs['costs']
+
+        costs[:, 0] /= (self.ref_prices * self.ref_yields)
+        costs[:, 1] *= self.ref_et/(self.ref_prices * self.ref_yields)
 
         qbar = ybar * xbar[:, 0]
 
@@ -263,9 +297,10 @@ class Farm(WaterUser):
                 "yield_elasticity_water": self.ysim_w.tolist()
             },
             "normalization_refs": {
-                "reference_et": [25],
-                "reference_prices": [5.33, 112, 112, 121.85, 6.86, 6.86, 8.02, 6.20],
-                "reference_yields": [52.56, 2.11, 2.11, 1.57, 29.01, 63.63, 29, 70.37]
+                "reference_et": self.ref_et.tolist(),
+                "reference_prices": self.ref_prices.tolist(),
+                "reference_yields": self.ref_yields.tolist(),
+                "reference_land": self.ref_land.tolist()
             }
         }
 
@@ -346,10 +381,10 @@ class Farm(WaterUser):
 
         # prepare initial guesses
 
-        q0 = self.ysim/self.ref_yields * self.landsim
+        q0 = self._ysim * self._landsim
         lam = np.zeros(len(self.input_list))
         lam_irr = np.zeros(len(self.crop_list))
-        x0 = np.hstack((self.landsim, self.watersim, q0, lam, lam_irr))
+        x0 = np.hstack((self._landsim, self._watersim, q0, lam, lam_irr))
         output = sci.root(func, x0, method='lm')
 
         return output
@@ -370,7 +405,8 @@ class Farm(WaterUser):
             observs = {
             'eta': [.35, 0.29],
             'ybar': [35, 2.2],
-            'xbar': [[0.1220, 0.0250],[0, 20.]],
+            'obs_land': [0.1220, 0.4.],
+            'obs_water': [0.0250, 0.035],
             'ybar_w': [0.06, 0.21],
             'prices': [5.82, 125],
             'costs': [111.56, 193.95]}

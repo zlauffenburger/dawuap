@@ -60,36 +60,36 @@ class TestFarm(object):
 
         self.et0 = 5.
         self.obs_water = (np.array([0, 0, 27.25, 0, 0, 20., 0, 0]) + self.et0) * self.obs_land
-        self.obs_water /= self.refet
+        #self.obs_water /= self.refet
 
         self.xbar = np.array([self.obs_land, self.obs_water]).T
 
         self.prices = np.array([5.82, 125, 125, 111.72, 4.80, 4.80, 6.88, 4.59])
-        self.prices /= self.refprices # normalize prices
+        #self.prices /= self.refprices # normalize prices
 
         self.costs = np.array([[111.56, 193.95, 390.02, 187.38, 120.80, 365.33, 135.13, 135.13],
                                [0, 0, 65.67, 0, 0, 48.20, 0, 0]]).T
 
-        self.costs[:, 0] /= self.acrev
-        self.costs[:, 1] *= self.refet/self.acrev
+        #self.costs[:, 0] /= self.acrev
+        #self.costs[:, 1] *= self.refet/self.acrev
 
         self.ybar = np.array([35, 2.2, 5.4, 1.7, 30, 110, 36, 36])
-        self.ybar /= self.refyields
+        #self.ybar /= self.refyields
 
         self.qbar = self.obs_land * np.array(self.ybar)
         self.ybar_w = np.array([0.06, 0.21, 0.21, 0.26, 0.06, 0.06, 0.06, 0.06])
 
-        params = {
-            'eta': self.eta,
-            'sigma': self.sigma,
-            'deltas': self.deltas,
-            'betas': self.betas,
-            'mus': self.mus,
-            'first_stage_lambda': self.first_stage_lambda,
-            'lambdas': self.lambdas_land,
-            'costs': self.costs,
-            'obs_allocation': self.xbar
-        }
+        # params = {
+        #     'eta': self.eta,
+        #     'sigma': self.sigma,
+        #     'deltas': self.deltas,
+        #     'betas': self.betas,
+        #     'mus': self.mus,
+        #     'first_stage_lambda': self.first_stage_lambda,
+        #     'lambdas': self.lambdas_land,
+        #     'costs': self.costs,
+        #     'obs_allocation': self.xbar
+        # }
 
         with open('test_data/Farms.json') as json_farms:
             farms = json.load(json_farms)
@@ -137,13 +137,21 @@ class TestFarm(object):
         # delta produces observed eta
         delta = TestFarm.deltas
 
+        xbar = TestFarm.xbar.copy()
+        xbar[:, -1] /= self.refet
+
+        ybar = self.ybar / self.refyields
+        qbar = self.obs_land * np.array(ybar)
+
+        prices = TestFarm.prices / self.refprices
+
         np.testing.assert_allclose(TestFarm.a._eta_sim(
             np.array(TestFarm.sigma),
             np.array(delta),
-            np.array(TestFarm.xbar),
+            np.array(xbar),
             np.array(TestFarm.ybar_w),
-            np.array(TestFarm.qbar),
-            np.array(TestFarm.prices)),
+            np.array(qbar),
+            np.array(prices)),
             TestFarm.eta, rtol=1e-2)
 
     def test_y_bar_w_sim(self):
@@ -151,11 +159,15 @@ class TestFarm(object):
         # delta produces observed eta
         beta = TestFarm.betas
         delta = TestFarm.deltas
+
+        xbar = TestFarm.xbar.copy()
+        xbar[:, -1] /= self.refet
+
         np.testing.assert_allclose(TestFarm.a._y_bar_w_sim(
             np.array(TestFarm.sigma),
             np.array(beta),
             np.array(delta),
-            np.array(TestFarm.xbar)),
+            np.array(xbar)),
             TestFarm.ybar_w, rtol=1e-2)
 
     def test_prod_func(self):
@@ -165,13 +177,16 @@ class TestFarm(object):
         delta = self.deltas
         mu = self.mus
 
+        xbar = TestFarm.xbar.copy()
+        xbar[:, -1] /= self.refet
+
         np.testing.assert_allclose(TestFarm.a.production_function(
             np.array(TestFarm.sigma),
             np.array(beta),
             np.array(delta),
             np.array(mu),
-            np.array(TestFarm.xbar)),
-            TestFarm.ybar * TestFarm.xbar[:, 0], rtol=1e-2)
+            np.array(xbar)),
+            TestFarm.ybar/TestFarm.refyields * xbar[:, 0], rtol=1e-2)
 
     def test_first_stage_lambda_land_lhs(self):
         # test optimality condition for land shadow price (lambda).
@@ -206,7 +221,8 @@ class TestFarm(object):
         observs = {
             'eta': self.eta,
             'ybar': self.ybar,
-            'xbar': self.xbar,
+            'obs_land': self.obs_land,
+            'obs_water': self.obs_water,
             'ybar_w': self.ybar_w,
             'prices': self.prices,
             'costs': self.costs
@@ -222,7 +238,8 @@ class TestFarm(object):
         observs = {
             'eta': self.eta,
             'ybar': self.ybar,
-            'xbar': self.xbar,
+            'obs_land': self.obs_land,
+            'obs_water': self.obs_water,
             'ybar_w': self.ybar_w,
             'prices': self.prices,
             'costs': self.costs
