@@ -149,11 +149,10 @@ class Farm(WaterUser):
         :return: vector of crop production with same shape as delta
         """
         r = rho(sigmas)
-
-        # adds evaporatranspiration to crop water if irrigation and et are dissagregated
-        xbar[:, -1] += np.asarray(et0)
         beta = beta.clip(min=0, max=1)
         x = xbar.clip(min=0.0001)
+        # adds evaporatranspiration to crop water if irrigation and et are dissagregated
+        x[:, -1] = x[:, -1] + np.asarray(et0)
         return mu * np.diag(np.dot(beta, x.T**r))**(delta/r)
 
     @staticmethod
@@ -335,11 +334,14 @@ class Farm(WaterUser):
         """
 
         et0 = kwargs['evapotranspiration']/self.ref_et
-        prices = kwargs['prices']
+        prices = kwargs['prices']/self.ref_prices
         if prices.ndim < 2:
             prices = prices[:, np.newaxis]
 
         costs = kwargs['costs']
+
+        costs[:, 0] /= (self.ref_prices * self.ref_yields)
+        costs[:, 1] *= self.ref_et/(self.ref_prices * self.ref_yields)
         L = kwargs['land_constraint']
         W = kwargs['water_constraint']
         LW = np.hstack((L, W))
@@ -363,6 +365,7 @@ class Farm(WaterUser):
             # build the left hand side of system of equations
             r = rho(self.sigmas)[:, np.newaxis]
             num = prices * self.deltas[:, np.newaxis] * q * self.betas * (xstar ** r)
+            xstar = xstar.clip(min=0.0001)
             den = np.diag(np.dot(self.betas, (xstar**r).T))
             drevdx = num / den[:, np.newaxis]
 
@@ -377,6 +380,7 @@ class Farm(WaterUser):
             xc[~self.irr] = 0
             rhs = np.hstack((dcdx.T.flatten(), qbar, LW, xc))
 
+            #print lhs - rhs
             return lhs - rhs
 
         # prepare initial guesses

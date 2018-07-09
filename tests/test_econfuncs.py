@@ -47,14 +47,14 @@ class TestFarm(object):
 
         self.mus = np.array([0.153, 0.082, 0.056, 0.327, 0.306, 0.038, 0.070, 0.427])
         self.first_stage_lambda = np.array([-0.165])
-        self.lambdas_land = np.array([[0.563, 0],
-                             [0.002, 0],
-                             [-0.804, -6.482],
-                             [0.136, 0],
-                             [0.369, 0],
-                             [0.227, -2.699],
-                             [0.436, 0],
-                             [0.663, 0]])
+        self.lambdas_land = np.array([[-0.07611602777927384, 0.],
+                                      [-0.6362336505496803, 0.],
+                                      [-1.4425777862249356, -6.482169427343296],
+                                      [-0.5028690941515698, 0.],
+                                      [-0.2695434989502033, 0.],
+                                      [-0.41119281063122387, -2.6880072430400057],
+                                      [-0.20217443722876566, 0.],
+                                      [0.024232063421729032, 0.]])
 
         self.obs_land = np.array([0.1220, 0.0250, 0.0078, 0.0328, 0.1636, 0.0051, 0.0189, 0.6247])
 
@@ -262,29 +262,35 @@ class TestFarm(object):
         }
 
         sim = TestFarm.a.simulate(**env)
-        print sim
+      #  print sim
         print sim.x[:16].reshape(2, 8).T
 
         # Solve maximization problem using scipy
         def netrevs(x):
 
-            x = x.T.reshape(8, 2)
-            p = self.prices
-            q = TestFarm.a.production_function(self.sigma, self.betas, self.deltas, self.mus,
-                                               x, self.et0/self.refet)
-            q = self.ybar * self.obs_land
-            nr = p * q - np.sum((self.costs + self.lambdas_land) * x, axis=1)
+            x = x.T.reshape(8, 2).copy()
+            p = self.prices/self.refprices
+            costs = self.costs.copy()
+            costs[:, 0] /= self.acrev
+            costs[:, 1] *= self.refet/self.acrev
+            q = TestFarm.a.production_function(TestFarm.a.sigmas, TestFarm.a.betas, TestFarm.a.deltas,
+                                               TestFarm.a.mus, x[:], self.et0/TestFarm.a.ref_et)
+            nr = p * q - np.sum((costs + self.lambdas_land) * x, axis=1)
             return -nr.sum()
 
         eq_const1 = {'type': 'eq',
-                      'fun': lambda x: x.T.reshape(8, 2).sum(axis=0) - self.xbar.sum(axis=0) }
+                      'fun': lambda x: x.T.reshape(8, 2).sum(axis=0) - self.xbar.sum(axis=0)}
         eq_const2 = {'type': 'eq',
-                      'fun': lambda x: np.extract(~TestFarm.a.irr, x.reshape(8, 2)[:, -1]) - 0}
+                      'fun': lambda x: np.extract(~TestFarm.a.irr, x.T.reshape(8, 2)[:, -1]) - 0}
 
-        res = opt.minimize(netrevs, self.xbar, method='SLSQP', constraints=[eq_const1],
+        xbar = self.xbar.copy()
+        xbar[:, -1] = xbar[:, -1] / self.refet
+        res = opt.minimize(netrevs, xbar, method='SLSQP', constraints=[eq_const1],
                            bounds=[(0.00, None)]*self.xbar.size)
         print res
         print res.x.reshape(8, 2)
+
+        print res.x.reshape(8, 2).sum(axis=0)
 
         np.testing.assert_allclose( sim.x[:16].reshape(2, 8).T, res.x.reshape(8, 2), rtol=1e-2)
 
