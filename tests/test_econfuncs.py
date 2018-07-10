@@ -282,19 +282,19 @@ class TestFarm(object):
             costs[:, 1] *= self.refet / (self.refprices * self.refyields)
             q = a.production_function(a.sigmas, a.betas, a.deltas,
                                                a.mus, x, self.et0/a.ref_et)
-            nr = p * q - np.sum((costs + a.lambdas_land) * x, axis=1)
+            nr = p * q - np.sum((costs + self.lambdas_land) * x, axis=1)
             return -nr.sum()
 
         xbar = self.xbar.copy()
         xbar[:, -1] = xbar[:, -1] / self.refet
 
         eq_const1 = {'type': 'eq',
-                      'fun': lambda x: x.T.reshape(8, 2)[:,0].sum(axis=0) - xbar[:,0].sum(axis=0)}
+                      'fun': lambda x: x.T.reshape(8, 2).sum(axis=0) - xbar.sum(axis=0)}
         eq_const2 = {'type': 'eq',
-                      'fun': lambda x: x.T.reshape(8, 2)[:, -1] - xbar[:, -1]}
+                      'fun': lambda x: x.T.reshape(8, 2)[:, -1][~a.irr] - xbar[:, -1][~a.irr]}
 
         res = opt.minimize(netrevs, xbar, method='SLSQP', constraints=[eq_const1, eq_const2],
-                           bounds=[(0.00, None)]*self.xbar.size)
+                           bounds=[(0.00, None)]*self.xbar.size, full_output=1)
         print res
         print res.x.reshape(8, 2)
 

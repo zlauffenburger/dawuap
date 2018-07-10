@@ -8,6 +8,7 @@ import pickle
 import json
 import numpy as np
 import hydroengine as hyd
+import econengine as econ
 import rasterio as rio
 import tqdm
 
@@ -70,6 +71,8 @@ def main(argc):
     #adj_net = np.array([[0, 0, 1], [1, 0, 0], [0, 0, 0]])
     rr = hyd.HBV(86400, swe, pond, sm, soils, **hbv_pars)
     mc = hyd.Routing(adj_net, 86400)
+
+    #wu = econ.Farm(**)
 
     ro_ts = []
     Q_ts = []

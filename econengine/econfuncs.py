@@ -358,8 +358,8 @@ class Farm(WaterUser):
             x = res[:num_crops * num_inputs].reshape(num_inputs, num_crops).T
             xstar = x.copy()
             xstar[:, -1] += et0
-            q = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x, et0)[:,np.newaxis]
-            lbdas = res[(x.size ): (x.size ) + num_inputs-1]
+            q = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x, et0)[:, np.newaxis]
+            lbdas = res[(x.size ): (x.size ) + num_inputs]
             psi = res[((x.size ) + lbdas.size):][:, np.newaxis]
 
             # build the left hand side of system of equations
@@ -369,27 +369,30 @@ class Farm(WaterUser):
             den = np.diag(np.dot(self.betas, (xstar**r).T))
             drevdx = num / den[:, np.newaxis]
 
-            lhs = np.hstack((drevdx.T.flatten(),  x[:,0].sum(axis=0), np.zeros_like(x[:, -1])))
+            pluset = np.array([0.0, et0])
+
+            xc = x[:, -1].copy()
+            #xc[self.irr] = 0
+
+            lhs = np.hstack((drevdx.T.flatten(),  (x + pluset).sum(axis=0), (psi*xc[:, np.newaxis]).flatten()))
 
             # build right hand side of system of equations
 
             dcdx = (costs + self.lambdas_land + lbdas + psi) * xstar
             #qbar = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x, et0)
 
-            xc = x[:, -1].copy()
-            xc[~self.irr] = 0
-            rhs = np.hstack((dcdx.T.flatten(), L, psi.flatten()*xc))
+            rhs = np.hstack((dcdx.T.flatten(), LW, np.zeros_like(xc)))
 
-            #print lhs - rhs
+            #print np.sum(lhs - rhs)
             return lhs - rhs
 
         # prepare initial guesses
 
         q0 = self._ysim * self._landsim
-        lam = np.zeros(len(self.input_list)-1)
+        lam = np.zeros(len(self.input_list))
         lam_irr = np.zeros(len(self.crop_list))
         x0 = np.hstack((self._landsim, self._watersim, lam, lam_irr))
-        output = sci.root(func, x0, method='lm')
+        output = sci.root(func, x0*1.2, method='lm')
 
         return output
 
