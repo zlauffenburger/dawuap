@@ -253,16 +253,23 @@ class TestFarm(object):
     def test_simulate(self):
 
         import scipy.optimize as opt
+
+        with open('test_data/test_farm.json') as json_farms:
+            farms = json.load(json_farms)
+
+        a = econfuncs.Farm(**farms)
+
         env = {
             'evapotranspiration': self.et0,
             'prices': self.prices,
             'costs': self.costs,
             'land_constraint': np.sum(self.obs_land),
-            'water_constraint': np.sum(self.obs_water)
+            'water_constraint': np.sum(self.obs_water)/self.refet
         }
 
-        sim = TestFarm.a.simulate(**env)
-      #  print sim
+        sim = a.simulate(**env)
+
+        print sim
         print sim.x[:16].reshape(2, 8).T
 
         # Solve maximization problem using scipy
@@ -271,21 +278,22 @@ class TestFarm(object):
             x = x.T.reshape(8, 2).copy()
             p = self.prices/self.refprices
             costs = self.costs.copy()
-            costs[:, 0] /= self.acrev
-            costs[:, 1] *= self.refet/self.acrev
-            q = TestFarm.a.production_function(TestFarm.a.sigmas, TestFarm.a.betas, TestFarm.a.deltas,
-                                               TestFarm.a.mus, x[:], self.et0/TestFarm.a.ref_et)
-            nr = p * q - np.sum((costs + self.lambdas_land) * x, axis=1)
+            costs[:, 0] /= (self.refprices * self.refyields)
+            costs[:, 1] *= self.refet / (self.refprices * self.refyields)
+            q = a.production_function(a.sigmas, a.betas, a.deltas,
+                                               a.mus, x, self.et0/a.ref_et)
+            nr = p * q - np.sum((costs + a.lambdas_land) * x, axis=1)
             return -nr.sum()
-
-        eq_const1 = {'type': 'eq',
-                      'fun': lambda x: x.T.reshape(8, 2).sum(axis=0) - self.xbar.sum(axis=0)}
-        eq_const2 = {'type': 'eq',
-                      'fun': lambda x: np.extract(~TestFarm.a.irr, x.T.reshape(8, 2)[:, -1]) - 0}
 
         xbar = self.xbar.copy()
         xbar[:, -1] = xbar[:, -1] / self.refet
-        res = opt.minimize(netrevs, xbar, method='SLSQP', constraints=[eq_const1],
+
+        eq_const1 = {'type': 'eq',
+                      'fun': lambda x: x.T.reshape(8, 2)[:,0].sum(axis=0) - xbar[:,0].sum(axis=0)}
+        eq_const2 = {'type': 'eq',
+                      'fun': lambda x: x.T.reshape(8, 2)[:, -1] - xbar[:, -1]}
+
+        res = opt.minimize(netrevs, xbar, method='SLSQP', constraints=[eq_const1, eq_const2],
                            bounds=[(0.00, None)]*self.xbar.size)
         print res
         print res.x.reshape(8, 2)

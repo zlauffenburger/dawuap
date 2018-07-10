@@ -210,15 +210,15 @@ class Farm(WaterUser):
 
     def _set_reference_observations(self, **kwargs):
 
-        eta = kwargs['eta']
-        ybar = kwargs['ybar'] / self.ref_yields
-        landbar = kwargs['obs_land']
-        waterbar = np.asarray(kwargs['obs_water']) / self.ref_et
+        eta = np.array(kwargs['eta'])
+        ybar = np.array(kwargs['ybar']) / self.ref_yields
+        landbar = np.array(kwargs['obs_land'])
+        waterbar = np.array(kwargs['obs_water']) / self.ref_et
         xbar = np.array([landbar, waterbar]).T
-        ybar_w = kwargs['ybar_w']
+        ybar_w = np.array(kwargs['ybar_w'])
 
-        prices = kwargs['prices'] / self.ref_prices
-        costs = kwargs['costs']
+        prices = np.array(kwargs['prices']) / self.ref_prices
+        costs = np.array(kwargs['costs'])
 
         costs[:, 0] /= (self.ref_prices * self.ref_yields)
         costs[:, 1] *= self.ref_et/(self.ref_prices * self.ref_yields)
@@ -333,17 +333,17 @@ class Farm(WaterUser):
 
         """
 
-        et0 = kwargs['evapotranspiration']/self.ref_et
-        prices = kwargs['prices']/self.ref_prices
+        et0 = np.array(kwargs['evapotranspiration'])/self.ref_et
+        prices = np.array(kwargs['prices'])/self.ref_prices
         if prices.ndim < 2:
             prices = prices[:, np.newaxis]
 
-        costs = kwargs['costs']
+        costs = np.array(kwargs['costs'])
 
         costs[:, 0] /= (self.ref_prices * self.ref_yields)
         costs[:, 1] *= self.ref_et/(self.ref_prices * self.ref_yields)
-        L = kwargs['land_constraint']
-        W = kwargs['water_constraint']
+        L = np.array(kwargs['land_constraint'])
+        W = np.array(kwargs['water_constraint'])
         LW = np.hstack((L, W))
 
         def func(res):
@@ -356,11 +356,11 @@ class Farm(WaterUser):
             # then simulated production (q)
             # finally lagrange multipliers
             x = res[:num_crops * num_inputs].reshape(num_inputs, num_crops).T
-            xstar = x
+            xstar = x.copy()
             xstar[:, -1] += et0
-            q = res[x.size:(x.size + num_crops)][:, np.newaxis]
-            lbdas = res[(x.size + q.size): (x.size + q.size) + num_inputs]
-            psi = res[((x.size + q.size) + lbdas.size):][:, np.newaxis]
+            q = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x, et0)[:,np.newaxis]
+            lbdas = res[(x.size ): (x.size ) + num_inputs-1]
+            psi = res[((x.size ) + lbdas.size):][:, np.newaxis]
 
             # build the left hand side of system of equations
             r = rho(self.sigmas)[:, np.newaxis]
@@ -369,16 +369,16 @@ class Farm(WaterUser):
             den = np.diag(np.dot(self.betas, (xstar**r).T))
             drevdx = num / den[:, np.newaxis]
 
-            lhs = np.hstack((drevdx.T.flatten(), q.flatten(), x.sum(axis=0), x[:, -1]))
+            lhs = np.hstack((drevdx.T.flatten(),  x[:,0].sum(axis=0), np.zeros_like(x[:, -1])))
 
             # build right hand side of system of equations
 
             dcdx = (costs + self.lambdas_land + lbdas + psi) * xstar
-            qbar = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x, et0)
+            #qbar = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x, et0)
 
-            xc = x[:, -1]
+            xc = x[:, -1].copy()
             xc[~self.irr] = 0
-            rhs = np.hstack((dcdx.T.flatten(), qbar, LW, xc))
+            rhs = np.hstack((dcdx.T.flatten(), L, psi.flatten()*xc))
 
             #print lhs - rhs
             return lhs - rhs
@@ -386,9 +386,9 @@ class Farm(WaterUser):
         # prepare initial guesses
 
         q0 = self._ysim * self._landsim
-        lam = np.zeros(len(self.input_list))
+        lam = np.zeros(len(self.input_list)-1)
         lam_irr = np.zeros(len(self.crop_list))
-        x0 = np.hstack((self._landsim, self._watersim, q0, lam, lam_irr))
+        x0 = np.hstack((self._landsim, self._watersim, lam, lam_irr))
         output = sci.root(func, x0, method='lm')
 
         return output
