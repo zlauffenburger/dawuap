@@ -51,8 +51,7 @@ class Farm(WaterUser):
         self._ysim = np.asarray(kwargs['simulated_states'].get('yields')) / self.ref_yields
         self.ysim_w = np.asarray(kwargs['simulated_states'].get('yield_elasticity_water'))
 
-
-        super(Farm, self).__init__(kwargs.get("id"), kwargs.get("name"))
+        super(Farm, self).__init__(kwargs.get("id"), kwargs.get("source_id"), kwargs.get("name"))
 
     @property
     def landsim(self):
@@ -272,6 +271,7 @@ class Farm(WaterUser):
 
         farm_dic = {
             "id": str(self.id),
+            "source_id": str(self.source_id),
             "name": str(self.name),
             "crop_list": self.crop_list,
             "input_list": self.input_list,

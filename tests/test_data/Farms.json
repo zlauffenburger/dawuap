@@ -2,6 +2,7 @@
   "farms":[
     {
       "id": 1,
+      "source_id": 198,
       "name": "Ravalli",
       "crop_list": ["dryland barley", "dryland alfalfa", "irrigated alfalfa", "dryland peas",
         "dryland spring wheat", "irrigated spring wheat", "dryland durum wheat", "dryland winter wheat"],
@@ -49,6 +50,7 @@
     },
     {
       "id": 2,
+      "source_id": 107,
       "name": "Lake",
       "crop_list": ["dryland barley", "dryland alfalfa", "irrigated alfalfa", "dryland peas",
         "dryland spring wheat", "irrigated spring wheat", "dryland durum wheat", "dryland winter wheat"],

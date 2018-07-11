@@ -10,9 +10,10 @@ class WaterUser(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, identifier, name):
+    def __init__(self, identifier, source_id, name):
         self.id = identifier
         self.name = name
+        self.source_id = source_id
 
     @abstractmethod
     def simulate(self):
