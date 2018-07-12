@@ -67,6 +67,17 @@ def main(argc):
         soils = []
         Q = np.zeros(num_links)
 
+    # Open water user object
+    with open('test_data/Farms.json') as json_farms:
+        farms = json.load(json_farms)
+
+    # retrieve the list of farms in the json input
+    lst_farms = farms['farms']
+
+    self.a = econfuncs.Farm(**self.farm1)
+
+    #my_item = next((item for item in my_list if item['id'] == my_unique_id), None)
+
 
     #adj_net = np.array([[0, 0, 1], [1, 0, 0], [0, 0, 0]])
     rr = hyd.HBV(86400, swe, pond, sm, soils, **hbv_pars)
