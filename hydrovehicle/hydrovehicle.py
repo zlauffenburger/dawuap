@@ -94,14 +94,13 @@ def main(argc):
                 li.append(None)
         nodes.append(li)
 
-
     mat_farms = np.array(nodes)
 
     def node_total_water_use(node):
         wu = map(lambda x: x.watersim.sum() if isinstance(x, econ.WaterUser) else 0., node[1:])
         return np.append(node[0], sum(wu))
 
-    wu = np.apply_along_axis(node_total_water_use, 1,  mat_farms)
+    ag_applied_water = np.apply_along_axis(node_total_water_use, 1,  mat_farms)
 
     ro_ts = []
     Q_ts = []
@@ -118,10 +117,10 @@ def main(argc):
             runoff = rr.run_time_step(pp_data[i, :, :], tmax_data[i, :, :], tmin_data[i, :, :], pet, argc.basin_shp,
                                       affine=tmax_affine, nodata=pp_nodata)
             # runoff[1] = runoff[-1] = 0
-            #print "runoff ", runoff, np.sum(runoff)
+
             Q = mc.muskingum_routing(Q, ks, e, np.array(runoff), qold)
             qold = np.array(runoff)  # np.insert(runoff, 3, 0)
-            #print "Q", Q, np.sum(Q)
+
             ro_ts.append(runoff)
             Q_ts.append(Q)
 
