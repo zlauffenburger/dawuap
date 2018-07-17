@@ -1,6 +1,5 @@
 from .context import utils
-from nose.tools import with_setup
-
+import nose
 
 class TestCropCoefficient(object):
 
@@ -23,9 +22,27 @@ class TestCropCoefficient(object):
     def teardown_function(self):
         pass
 
-    #@with_setup(setup_function, teardown_function)
-    def rest_retrieve_crop_coefficient(self):
-        cur_date = "25/06/2014"
-        cropid = 8
-        utils.retrieve_crop_coefficient(cur_date, self.start, self.cover, self.end, cropid)
+    def test_retrieve_crop_coefficient_fast_growth(self):
+        cur_date = "06/25/2014"
+        cropid = 15 # Peas
+        res = utils.retrieve_crop_coefficient(cur_date, self.start, self.cover, self.end, cropid)
+        nose.tools.assert_true(0.29 <= res <= 0.37)
+
+    def test_retrieve_crop_coefficient_early(self):
+        cur_date = "04/25/2014"
+        cropid = 15  # Peas
+        res = utils.retrieve_crop_coefficient(cur_date, self.start, self.cover, self.end, cropid)
+        nose.tools.assert_equal(res, 0.0)
+
+    def test_retrieve_crop_coefficient_late(self):
+        cur_date = "10/25/2014"
+        cropid = 15  # Peas
+        res = utils.retrieve_crop_coefficient(cur_date, self.start, self.cover, self.end, cropid)
+        nose.tools.assert_equal(res, 0.0)
+
+    def test_retrieve_crop_coefficient_peak(self):
+        cur_date = "9/11/2014"
+        cropid = 15  # Peas
+        res = utils.retrieve_crop_coefficient(cur_date, self.start, self.cover, self.end, cropid)
+        nose.tools.assert_true(0.17 <= res <= 0.22)
 

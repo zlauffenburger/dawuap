@@ -1,31 +1,31 @@
+from __future__ import division
 import pandas as pd
-import numpy as np
-from datetime import date
-import pkgutil
-data = pkgutil.get_data('', 'utils/crop_coefficients.txt')
+from dateutil import parser
+import math
+from scipy.interpolate import interp1d
+import pkg_resources
+
+DATA_PATH = pkg_resources.resource_filename('utils', '/')
 
 
-def retrieve_crop_coefficient(current_date, start_date, cover_date, end_date, crop_id, kc_table="crop_coefficients.txt"):
+def retrieve_crop_coefficient(current_date, start_date, cover_date, end_date,
+                              crop_id, kc_table="crop_coefficients.txt"):
     "Returns crop coefficient for current_date interpolated from agMet lookup table"
 
-    df_kc = pd.read_table(data, index_col="crop_id")
-    current_date = date(current_date)
-    start_date = date(start_date)
-    cover_date = date(cover_date)
-    end_date = date(end_date)
+    df_kc = pd.read_table(DATA_PATH + kc_table, index_col="crop_id")
+    current_date = parser.parse(current_date)
+    start_date = parser.parse(start_date)
+    cover_date = parser.parse(cover_date)
+    end_date = parser.parse(end_date)
     crop_id = int(crop_id)
 
     if (current_date > start_date) & (current_date < cover_date):
-        frac_growing_season = (start_date - current_date).days / (cover_date - start_date).days
+        frac_growing_season = (current_date - start_date).days / (cover_date - start_date).days * 100
+        f = interp1d(range(0, 110, 10), df_kc.loc[crop_id][:11])
     elif (current_date >= cover_date) & (current_date <= end_date):
-        frac_growing_season = (cover_date - current_date).days / (end_date - cover_date).days
+        frac_growing_season = (current_date - cover_date).days / (end_date - cover_date).days * 100
+        f = interp1d(range(0, 110, 10), df_kc.loc[crop_id][10:-2])
     else:
         return 0.0
 
-    fl = df_kc[crop_id, frac_growing_season.floor]
-    ceil = df_kc[crop_id, frac_growing_season.ceiling]
-
-    return fl + (ceil - fl) * 0.1 * frac_growing_season
-
-
-    print df_kc[crop_id]
+    return f(frac_growing_season)
