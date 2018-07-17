@@ -1,11 +1,14 @@
 import pandas as pd
 import numpy as np
 from datetime import date
+import pkgutil
+data = pkgutil.get_data('', 'utils/crop_coefficients.txt')
+
 
 def retrieve_crop_coefficient(current_date, start_date, cover_date, end_date, crop_id, kc_table="crop_coefficients.txt"):
     "Returns crop coefficient for current_date interpolated from agMet lookup table"
 
-    df_kc = pd.read_table(kc_table, index_col="crop_id")
+    df_kc = pd.read_table(data, index_col="crop_id")
     current_date = date(current_date)
     start_date = date(start_date)
     cover_date = date(cover_date)
@@ -26,7 +29,3 @@ def retrieve_crop_coefficient(current_date, start_date, cover_date, end_date, cr
 
 
     print df_kc[crop_id]
-
-
-
-retrieve_crop_coefficient(0 ,0 ,0, 0, 1)
