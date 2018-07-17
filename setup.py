@@ -1,17 +1,19 @@
 try:
     from setuptools import setup
+    from setuptools import find_packages
 except ImportError:
     from distutils.core import setup
 
 config = {
         'description': 'Hydrologic Engine for daWUAP model',
+        'include_package_data': True,
         'author': 'Marco Maneta',
         'url': 'https://bitbucket.org/umthydromodeling/dawuaphydroengine',
         'download_url': 'https://bitbucket.org/umthydromodeling/dawuaphydroengine/get/a88ac8f68b01.zip',
         'author_email': 'marco.maneta@umontana.edu',
         'version': '0.1',
         'install_requires': ['numpy', 'nose', 'rasterstats', 'rasterio', 'fiona', 'shapely','tqdm', 'nco'],
-        'packages': ['hydroengine', 'utils', 'hydrovehicle'],
+        'packages': find_packages(),
         'scripts': ['bin/hydrovehicle.py', 'bin/dataCollectionThredds.py', 'bin/writeVectorModelParameters.py',
                     'bin/writeRasterModelParameters.py'],
         'name': 'daWUAP'
