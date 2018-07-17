@@ -9,6 +9,7 @@ import json
 import numpy as np
 import hydroengine as hyd
 import econengine as econ
+from .coupling import node_total_water_use
 import rasterio as rio
 import tqdm
 
@@ -84,7 +85,7 @@ def main(argc):
     # Loop through nodes in the network, find farms diverting from it and construct matrix of
     # farms associated to each node
     nodes = []
-    #mat_farms = np.empty()
+
     for ids in mc.conn.index:
         li = [ids]
         for farm in lst_farms:
@@ -96,9 +97,10 @@ def main(argc):
 
     mat_farms = np.array(nodes)
 
-    def node_total_water_use(node):
-        wu = map(lambda x: x.watersim.sum() if isinstance(x, econ.WaterUser) else 0., node[1:])
-        return np.append(node[0], sum(wu))
+    wu = node_total_water_use(nodes)
+    # def node_total_water_use(node):
+    #     wu = map(lambda x: x.watersim.sum() if isinstance(x, econ.WaterUser) else 0., node[1:])
+    #     return np.append(node[0], sum(wu))
 
     ag_applied_water = np.apply_along_axis(node_total_water_use, 1,  mat_farms)
 
