@@ -25,6 +25,8 @@ class Farm(WaterUser):
 
         self.crop_list = kwargs.get('crop_list')
         self.input_list = kwargs.get('input_list')
+        self.crop_id = np.asanyarray(kwargs.get('crop_id'), dtype=np.int)
+        self.irr_eff = np.asanyarray(kwargs.get('irrigation_eff'), dtype=np.float)
         self.irr = np.asanyarray(kwargs.get('irrigation_mask'), dtype=bool)
 
         self.ref_et = np.asarray(kwargs['normalization_refs'].get('reference_et'))
@@ -50,6 +52,12 @@ class Farm(WaterUser):
         self.etasim = np.asarray(kwargs['simulated_states'].get('supply_elasticity_eta'))
         self._ysim = np.asarray(kwargs['simulated_states'].get('yields')) / self.ref_yields
         self.ysim_w = np.asarray(kwargs['simulated_states'].get('yield_elasticity_water'))
+
+        # This to be filled with information provided during simulations
+        self.crop_start_date = None
+        self.crop_cover_date = None
+        self.crop_end_date = None
+
 
         super(Farm, self).__init__(kwargs.get("id"), kwargs.get("source_id"), kwargs.get("name"))
 
@@ -276,6 +284,8 @@ class Farm(WaterUser):
             "crop_list": self.crop_list,
             "input_list": self.input_list,
             "irrigation_mask": self.irr.tolist(),
+            "crop_id": self.crop_id.tolist(),
+            "irrigation_eff": self.crop_id.tolist(),
             "parameters": {
                 "sigmas": self.sigmas.tolist(),
                 "deltas": self.deltas.tolist(),
@@ -322,12 +332,19 @@ class Farm(WaterUser):
         ::
 
             observs = {
+            'farm_id': 107,
             'evapotranspiration': [5., 5.]
             'prices': [5.82, 125],
             'costs': [111.56, 193.95],
             'land_constraint': 100,
             'water_constraint': 100,
-            '}
+            'crop_start_date': ["5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014",
+                                "5/15/2014", "5/15/2014", "5/15/2014"],
+            'crop_cover_date': ["7/02/2014", "7/02/2014", "7/02/2014", "7/02/2014", "7/02/2014",
+                                "7/02/2014", "7/02/2014", "7/02/2014"],
+            'crop_end_date': ["8/25/2014", "8/25/2014", "8/25/2014", "8/25/2014", "8/25/2014",
+                              "8/25/2014","8/25/2014", "8/25/2014"],
+            }
 
             Farm_obj.simulate(**observs)
 
@@ -345,6 +362,10 @@ class Farm(WaterUser):
         L = np.array(kwargs['land_constraint'])
         W = np.array(kwargs['water_constraint'])
         LW = np.hstack((L, W))
+
+        self.crop_start_date = np.array(kwargs('crop_start_date'))
+        self.crop_cover_date = np.array(kwargs('crop_cover_date'))
+        self.crop_end_date = np.array(kwargs('crop_end_date'))
 
         def func(res):
 

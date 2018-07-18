@@ -6,8 +6,10 @@
       "name": "Ravalli",
       "crop_list": ["dryland barley", "dryland alfalfa", "irrigated alfalfa", "dryland peas",
         "dryland spring wheat", "irrigated spring wheat", "dryland durum wheat", "dryland winter wheat"],
-      "irrigation_mask": [0, 0, 1, 0, 0, 1, 0, 0 ],
       "input_list": ["land","water"],
+           "crop_id": [18, 63, 62, 15, 18, 18, 4, 4],
+      "irrigation_eff": [0, 0, 0.8, 0, 0, 0.75, 0, 0],
+      "irrigation_mask": [0, 0, 1, 0, 0, 1, 0, 0 ],
       "parameters": {
         "sigmas": [0.5],
         "deltas": [0.276, 0.227, 0.225, 0.574, 0.299, 0.276, 0.261, 0.507],
@@ -55,6 +57,9 @@
       "crop_list": ["dryland barley", "dryland alfalfa", "irrigated alfalfa", "dryland peas",
         "dryland spring wheat", "irrigated spring wheat", "dryland durum wheat", "dryland winter wheat"],
       "input_list": ["land","water"],
+      "crop_id": [18, 63, 62, 15, 18, 18, 4, 4],
+      "irrigation_eff": [0, 0, 0.8, 0, 0, 0.75, 0, 0],
+      "irrigation_mask": [0, 0, 1, 0, 0, 1, 0, 0 ],
       "parameters": {
         "sigmas": [0.5],
         "deltas": [0.276, 0.227, 0.225, 0.620, 0.304, 0.276, 0.261, 0.387],

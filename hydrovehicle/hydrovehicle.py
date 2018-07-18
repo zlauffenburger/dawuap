@@ -14,7 +14,6 @@ import rasterio as rio
 import tqdm
 
 
-
 def main(argc):
 
     init_date = argc.init_date

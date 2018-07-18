@@ -260,11 +260,18 @@ class TestFarm(object):
         a = econfuncs.Farm(**farms)
 
         env = {
+            'farm_id': 107,
             'evapotranspiration': self.et0,
             'prices': self.prices,
             'costs': self.costs,
             'land_constraint': np.sum(self.obs_land),
-            'water_constraint': np.sum(self.obs_water)/self.refet
+            'water_constraint': np.sum(self.obs_water)/self.refet,
+            'crop_start_date': ["5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014",
+                                "5/15/2014", "5/15/2014", "5/15/2014"],
+            'crop_cover_date': ["7/02/2014", "7/02/2014", "7/02/2014", "7/02/2014", "7/02/2014",
+                                "7/02/2014", "7/02/2014", "7/02/2014"],
+            'crop_end_date': ["8/25/2014", "8/25/2014", "8/25/2014", "8/25/2014", "8/25/2014",
+                              "8/25/2014","8/25/2014", "8/25/2014"],
         }
 
         sim = a.simulate(**env)
