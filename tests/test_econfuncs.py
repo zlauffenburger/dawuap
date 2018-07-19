@@ -276,8 +276,8 @@ class TestFarm(object):
 
         sim = a.simulate(**env)
 
-        print sim
-        print sim.x[:16].reshape(2, 8).T
+     #   print sim
+     #   print sim.x[:16].reshape(2, 8).T
 
         # Solve maximization problem using scipy
         def netrevs(x):
@@ -301,7 +301,7 @@ class TestFarm(object):
                       'fun': lambda x: x.T.reshape(8, 2)[:, -1][~a.irr] - xbar[:, -1][~a.irr]}
 
         res = opt.minimize(netrevs, xbar, method='SLSQP', constraints=[eq_const1, eq_const2],
-                           bounds=[(0.00, None)]*self.xbar.size)
+                           bounds=[(0.00, None)]*self.xbar.size, options={"disp": 1})
         print res
         print res.x.reshape(8, 2)
 

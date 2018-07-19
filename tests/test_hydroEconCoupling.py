@@ -27,41 +27,15 @@ class TestHydroEconCoupling(object):
         # retrieve the list of farms in the json input
         self.lst_farms = farms['farms']
 
-        self.scenario = [{
-            'farm_id': 198,
-            'evapotranspiration': [5., 5., 5., 5., 5., 5., 5., 5.],
-            'prices': [5.82, 125,  5.82, 125,  5.82, 125,  5.82, 125],
-            'costs': np.array([[111.56, 193.95, 390.02, 187.38, 120.80, 365.33, 135.13, 135.13],
-                               [0, 0, 65.67, 0, 0, 48.20, 0, 0]]).T,
-            'land_constraint': 100,
-            'water_constraint': 100,
-            'crop_start_date': ["5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014",
-                                "5/15/2014", "5/15/2014", "5/15/2014"],
-            'crop_cover_date': ["7/02/2014", "7/02/2014", "7/02/2014", "7/02/2014", "7/02/2014",
-                                "7/02/2014", "7/02/2014", "7/02/2014"],
-            'crop_end_date': ["8/25/2014", "8/25/2014", "8/25/2014", "8/25/2014", "8/25/2014",
-                              "8/25/2014", "8/25/2014", "8/25/2014"],
-        },
-        {
-            'farm_id': 107,
-            'evapotranspiration': [5., 5., 5., 5., 5., 5., 5., 5.],
-            'prices': [5.82, 125,  5.82, 125,  5.82, 125,  5.82, 125],
-            'costs': np.array([[111.56, 193.95, 390.02, 187.38, 120.80, 365.33, 135.13, 135.13],
-                               [0, 0, 65.67, 0, 0, 48.20, 0, 0]]).T,
-            'land_constraint': 100,
-            'water_constraint': 100,
-            'crop_start_date': ["5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014",
-                                "5/15/2014", "5/15/2014", "5/15/2014"],
-            'crop_cover_date': ["7/02/2014", "7/02/2014", "7/02/2014", "7/02/2014", "7/02/2014",
-                                "7/02/2014", "7/02/2014", "7/02/2014"],
-            'crop_end_date': ["8/25/2014", "8/25/2014", "8/25/2014", "8/25/2014", "8/25/2014",
-                              "8/25/2014", "8/25/2014", "8/25/2014"],
-        }]
+        # Open economic scenario object
+        with open('./test_data/Scenario.json') as json_scenario:
+            scenario = json.load(json_scenario)
+
+        self.scenario = scenario
 
         self.coupling = HydroEconCoupling(self.mc, self.lst_farms)
 
-        #self.mat_farms = _build_water_user_matrix()
-        #self.farm_idx = np.where(isinstance(econ.WaterUser, self.mat_farms))
+        self.coupling.simulate_all_users(self.scenario)
 
     @classmethod
     def teardown_class(cls):
@@ -80,26 +54,28 @@ class TestHydroEconCoupling(object):
         nose.tools.assert_is_instance(a.water_users, list)
 
     def test__build_water_user_matrix(self):
-        nose.tools.assert_is_instance(self.coupling.ma_farms_table, np.ndarray)
-        nose.tools.assert_equal(2, np.count_nonzero(self.coupling.ma_farms_table[:, 1:]))
+        nose.tools.assert_is_instance(self.coupling.farms_table, np.ndarray)
+        nose.tools.assert_equal(2, np.count_nonzero(self.coupling.farms_table[:, 1:]))
         np.testing.assert_array_equal((np.array([106, 197]), np.array([1, 0])), self.coupling.farm_idx)
 
     def test_simulate_all_users(self):
 
         self.coupling.simulate_all_users(self.scenario)
-        for i, users in enumerate(self.coupling.ma_farms_table[:, 1:][self.coupling.farm_idx]):
+        for i, users in enumerate(self.coupling.farms_table[:, 1:][self.coupling.farm_idx]):
             np.testing.assert_array_equal(self.scenario[i].get('crop_start_date'),
                                           users.crop_start_date)
+        nose.tools.assert_is_instance(self.coupling.applied_water_factor[:, 1:][self.coupling.farm_idx][0], list)
 
     def test__calculate_applied_water_factor(self):
-        self.coupling.simulate_all_users(self.scenario)
-        self.coupling._calculate_applied_water_factor()
 
-    def test_total_water_use_per_node(self):
-        self.coupling.total_water_use_per_node()
-        # wu = map(lambda x: x.watersim.sum() if isinstance(x, econfuncs.WaterUser)
-        # else 0., node[1:])
-        # ref = np.append(node[0], sum(wu))
+        self.coupling._calculate_applied_water_factor()
+        isinstance(self.coupling.applied_water_factor[:, 1:][self.coupling.farm_idx], list)
+
+    def test_calculate_water_diversion_per_node(self):
+        cur_date = "7/02/2014"
+        nose.tools.assert_is_instance(self.coupling.applied_water_factor[:, 1:][self.coupling.farm_idx][0], list)
+        self.coupling.calculate_water_diversion_per_node(cur_date)
+        nose.tools.assert_is_instance(self.coupling.applied_water_factor[:, 1:][self.coupling.farm_idx][0], list)
 
 
 

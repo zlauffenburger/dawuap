@@ -71,17 +71,22 @@ def main(argc):
     with open('Farms.json') as json_farms:
         farms = json.load(json_farms)
 
+    # Open scenarios object
+    with open('Scenarios.json') as json_scenarios:
+        scenarios = json.load(json_scenarios)
+
     # retrieve the list of farms in the json input
     lst_farms = farms['farms']
 
-    #self.a = econfuncs.Farm(**self.farm1)
-
-
-    #adj_net = np.array([[0, 0, 1], [1, 0, 0], [0, 0, 0]])
+    """
+    Creates the rainfall-runoff model object, the routing object and the model coupling objects 
+    """
     rr = hyd.HBV(86400, swe, pond, sm, soils, **hbv_pars)
     mc = hyd.Routing(adj_net, 86400)
-
     hydecon = HydroEconCoupling(mc, lst_farms)
+
+    # simulates all users with loaded scenarios
+    hydecon.simulate_all_users(scenarios)
 
 
     ro_ts = []
@@ -94,6 +99,9 @@ def main(argc):
 
         for i in np.arange(pp_data.shape[0]):
             #print "Calcuating time step ", i + 1
+
+            cur_date = (parse(init_date) + i * datetime.timedelta(seconds=rr.dt)).strftime("%Y%m%d")
+
             # Calculate potential evapotranspiration
             pet = hyd.hamon_pe((tmin_data[i, :, :] + tmax_data[i, :, :]) * 0.5, lat, i)
             runoff = rr.run_time_step(pp_data[i, :, :], tmax_data[i, :, :], tmin_data[i, :, :], pet, argc.basin_shp,
@@ -107,7 +115,7 @@ def main(argc):
             Q_ts.append(Q)
 
             # write to drive the states for the current time step
-            cur_date = (parse(init_date) + i * datetime.timedelta(seconds=rr.dt)).strftime("%Y%m%d")
+
             latlon = np.array((lat.ravel(), lon.ravel()))
             rr.write_current_states(cur_date, ".tif", pp.write_array_to_geotiff)
             pbar.update()
