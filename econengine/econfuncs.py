@@ -363,9 +363,9 @@ class Farm(WaterUser):
         W = np.array(kwargs['water_constraint'])
         LW = np.hstack((L, W))
 
-        self.crop_start_date = np.array(kwargs('crop_start_date'))
-        self.crop_cover_date = np.array(kwargs('crop_cover_date'))
-        self.crop_end_date = np.array(kwargs('crop_end_date'))
+        self.crop_start_date = np.array(kwargs['crop_start_date'])
+        self.crop_cover_date = np.array(kwargs['crop_cover_date'])
+        self.crop_end_date = np.array(kwargs['crop_end_date'])
 
         def func(res):
 
@@ -390,7 +390,8 @@ class Farm(WaterUser):
             den = np.diag(np.dot(self.betas, (xstar**r).T))
             drevdx = num / den[:, np.newaxis]
 
-            pluset = np.array([0.0, et0])
+            pluset = np.zeros_like(x)
+            pluset[:, 0] += et0
 
             xc = x[:, -1].copy()
             #xc[self.irr] = 0

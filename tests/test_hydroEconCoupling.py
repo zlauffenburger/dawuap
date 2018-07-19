@@ -27,11 +27,12 @@ class TestHydroEconCoupling(object):
         # retrieve the list of farms in the json input
         self.lst_farms = farms['farms']
 
-        self.observs = [{
+        self.scenario = [{
             'farm_id': 198,
-            'evapotranspiration': [5., 5.],
-            'prices': [5.82, 125],
-            'costs': [111.56, 193.95],
+            'evapotranspiration': [5., 5., 5., 5., 5., 5., 5., 5.],
+            'prices': [5.82, 125,  5.82, 125,  5.82, 125,  5.82, 125],
+            'costs': np.array([[111.56, 193.95, 390.02, 187.38, 120.80, 365.33, 135.13, 135.13],
+                               [0, 0, 65.67, 0, 0, 48.20, 0, 0]]).T,
             'land_constraint': 100,
             'water_constraint': 100,
             'crop_start_date': ["5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014",
@@ -43,9 +44,10 @@ class TestHydroEconCoupling(object):
         },
         {
             'farm_id': 107,
-            'evapotranspiration': [5., 5.],
-            'prices': [5.82, 125],
-            'costs': [111.56, 193.95],
+            'evapotranspiration': [5., 5., 5., 5., 5., 5., 5., 5.],
+            'prices': [5.82, 125,  5.82, 125,  5.82, 125,  5.82, 125],
+            'costs': np.array([[111.56, 193.95, 390.02, 187.38, 120.80, 365.33, 135.13, 135.13],
+                               [0, 0, 65.67, 0, 0, 48.20, 0, 0]]).T,
             'land_constraint': 100,
             'water_constraint': 100,
             'crop_start_date': ["5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014",
@@ -84,7 +86,9 @@ class TestHydroEconCoupling(object):
 
     def test_simulate_all_users(self):
 
-        self.coupling.simulate_all_users(self.observs)
-        for users in self.coupling.water_users:
-            print users
+        self.coupling.simulate_all_users(self.scenario)
+        for i, users in enumerate(self.coupling.ma_farms_table[:, 1:][self.coupling.farm_idx]):
+            np.testing.assert_array_equal(self.scenario[i].get('crop_start_date'),
+                                          users.crop_start_date)
+
 

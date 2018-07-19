@@ -46,7 +46,7 @@ class HydroEconCoupling(object):
 
         for obs in lst_observations:
             for farm in self.ma_farms_table[:,1:][self.farm_idx]:
-                if obs.get("farm_id") == farm.id:
+                if obs.get("farm_id") == farm.source_id:
                     farm.simulate(**obs)
 
     def node_total_water_use(node):
