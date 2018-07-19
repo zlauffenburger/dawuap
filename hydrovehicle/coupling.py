@@ -2,7 +2,7 @@ import numpy as np
 import numpy.ma as ma
 import econengine as econ
 from utils.crop_coefficient import retrieve_crop_coefficient
-import parser
+
 
 __all__ = ['HydroEconCoupling']
 
@@ -10,19 +10,25 @@ __all__ = ['HydroEconCoupling']
 class HydroEconCoupling(object):
     """Couples the hydrologic and economic models"""
 
-    def __init__(self, routing_obj, water_users):
+    def __init__(self, routing_obj, water_users_lst):
 
         self.nodes = routing_obj
-        self.water_users = water_users
+        self.water_users = water_users_lst
 
         self.ma_farms_table = self._build_water_user_matrix()
         self.farm_idx = np.where(self.ma_farms_table[:, 1:])
+
+        self.applied_water_factor = self.ma_farms_table.copy()
 
     @staticmethod
     def apply_to_all_members(sequence, attrib, *args, **kwargs):
         lst = []
         for obj in sequence:
-            lst.append(getattr(obj, attrib)(*args, **kwargs))
+            try:
+                lst.append(getattr(obj, attrib)(*args, **kwargs))
+            except TypeError:
+                lst.append(getattr(obj, attrib))
+
         return lst
 
     def _build_water_user_matrix(self):
@@ -50,7 +56,9 @@ class HydroEconCoupling(object):
                 if obs.get("farm_id") == farm.source_id:
                     farm.simulate(**obs)
 
-    def node_total_water_use(node):
+        self._calculate_applied_water_factor()
+
+    def total_water_use_per_node(self):
         """Returns an array with total water used from
          each node from all users diverting from it.
 
@@ -63,39 +71,57 @@ class HydroEconCoupling(object):
         :returns: an array of length N with the total water used from each node.
 
         """
-        wu = map(lambda x: x.watersim.sum() if isinstance(x, econfuncs.WaterUser)
-                 else 0., node[1:])
-        return np.append(node[0], sum(wu))
 
-    def calculate_applied_water_per_crop(self):
-        """Returns a matrix of arrays of water used per crop for each water user and
-         water diversion node.
+        wu = self.ma_farms_table.copy()
+        wu[:,1:][self.farm_idx] = self.apply_to_all_members(self.ma_farms_table[:,1:][self.farm_idx], "watersim")
+        wu[:, 1:][self.farm_idx] = self.apply_to_all_members(wu[:, 1:][self.farm_idx], "sum")
+        print np.vstack((wu[:,0], wu[:, 1:].sum(axis=1))).T
 
-         Note that the values represents water used, not water diverted.
 
-        :param node: NxM numpy array of WaterUsers. each row is one of hte N nodes
-         in the network. The first column are node IDs, the subsequent columns
-         are each of the M-1 WaterUser objects represented in the system.
+    def _calculate_applied_water_factor(self):
+        """Calculates a matrix of arrays with the water diversion adjustment factors per crop and farm.
 
-        :returns: an array of length N with arrays of water used per crop
-        grown by the water user from each node.
+         The factor takes into account the irrigation efficient as well as the length of the crop period
+          expressed as the accumulation of crop coefficients. The factor is defined as follows:
+
+          ::
+
+          f:= Sum_t(Kc_t) * Ieff
+
+        The actual daily water diverted (D) to supply water for each crop can then be calculated as:
+
+         ::
+
+         D = Wtot_t * Kc_t / f
+
+        Factor f and the subsequent calculation of D is per crop, so thhis function yields a vector per farm, with one
+        f per crop.
+
 
         """
+        from dateutil import parser
+        import datetime
 
-        aw = self.ma_farms_table.copy()
         Kcs = np.vectorize(retrieve_crop_coefficient)
 
+        for i, farm in enumerate(self.ma_farms_table[:,1:][self.farm_idx]):
+            try:
+                dates = zip(farm.crop_start_date,
+                            farm.crop_cover_date,
+                            farm.crop_end_date,
+                            farm.crop_id)
+            except TypeError, e:
+                print "Water User %s does not have information on crop planting dates. Did you forget to " \
+                      "simulate a scenario?" %farm.name
+                exit(-1)
 
-        f = []
-        for farm in self.ma_farms_table[:,1:][self.farm_idx]:
-            dates = zip(farm.crop_start_date,
-                        farm.crop_cover_date,
-                        farm.crop_end_date)
-            print dates
-        #
-        #     tot_kc = []
-        #
-        # wu = map(lambda x: x.watersim if isinstance(x, econ.WaterUser)
-        #          else 0., node[1:])
-        # retrieve_crop_coefficient()
-        # return np.append(node[0], sum(wu))
+            lst_kc = []
+            for s, c, e, cropid, in dates:
+
+                date_array = [(parser.parse(s) + datetime.timedelta(days=x)).strftime("%m/%d/%Y")
+                              for x in range(0, (parser.parse(e) - parser.parse(s)).days + 1)]
+                lst_kc.append(
+                      Kcs(date_array, s, c, e, cropid).sum() * farm.irr_eff * farm.irr
+                )
+                self.applied_water_factor[:, 1:][self.farm_idx][i] = np.array(lst_kc)
+

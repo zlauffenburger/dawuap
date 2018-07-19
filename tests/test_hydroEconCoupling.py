@@ -91,7 +91,15 @@ class TestHydroEconCoupling(object):
             np.testing.assert_array_equal(self.scenario[i].get('crop_start_date'),
                                           users.crop_start_date)
 
-    def test_calculate_applied_water_per_crop(self):
-        self.coupling.calculate_applied_water_per_crop()
+    def test__calculate_applied_water_factor(self):
+        self.coupling.simulate_all_users(self.scenario)
+        self.coupling._calculate_applied_water_factor()
+
+    def test_total_water_use_per_node(self):
+        self.coupling.total_water_use_per_node()
+        # wu = map(lambda x: x.watersim.sum() if isinstance(x, econfuncs.WaterUser)
+        # else 0., node[1:])
+        # ref = np.append(node[0], sum(wu))
+
 
 
