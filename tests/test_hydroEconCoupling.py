@@ -91,4 +91,7 @@ class TestHydroEconCoupling(object):
             np.testing.assert_array_equal(self.scenario[i].get('crop_start_date'),
                                           users.crop_start_date)
 
+    def test_calculate_applied_water_per_crop(self):
+        self.coupling.calculate_applied_water_per_crop()
+
 

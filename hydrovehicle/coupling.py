@@ -2,6 +2,7 @@ import numpy as np
 import numpy.ma as ma
 import econengine as econ
 from utils.crop_coefficient import retrieve_crop_coefficient
+import parser
 
 __all__ = ['HydroEconCoupling']
 
@@ -81,14 +82,19 @@ class HydroEconCoupling(object):
 
         """
 
-        pass
+        aw = self.ma_farms_table.copy()
+        Kcs = np.vectorize(retrieve_crop_coefficient)
 
-        # aw = self.ma_farms_table.copy()
+
+        f = []
+        for farm in self.ma_farms_table[:,1:][self.farm_idx]:
+            dates = zip(farm.crop_start_date,
+                        farm.crop_cover_date,
+                        farm.crop_end_date)
+            print dates
         #
-        # f = []
-        # for farm, idx in self.ma_farms_table[self.farm_idx]:
         #     tot_kc = []
-        #     farm.watersim *
+        #
         # wu = map(lambda x: x.watersim if isinstance(x, econ.WaterUser)
         #          else 0., node[1:])
         # retrieve_crop_coefficient()
