@@ -267,10 +267,13 @@ class Farm(WaterUser):
 
             return lhs - rhs
 
-        def calibrate():
+        def calibrate(solve_pmp_program=True):
             x = np.hstack((self.deltas, self.betas.T.flatten(),
                            self.mus, self.lambdas_land.T.flatten(), self.first_stage_lambda))
-            return sci.root(func, x, method='lm')
+            if solve_pmp_program:
+                return sci.root(func, x, method='lm')
+            else:
+                return func(x)
 
         return calibrate
 
@@ -414,7 +417,7 @@ class Farm(WaterUser):
         lam = np.zeros(len(self.input_list))
         lam_irr = np.zeros(len(self.crop_list))
         x0 = np.hstack((self._landsim, self._watersim, lam, lam_irr))
-        output = sci.root(func, x0*1.2, method='lm')
+        output = sci.root(func, x0, method='lm')
 
         return output
 

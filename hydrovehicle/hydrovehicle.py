@@ -9,7 +9,7 @@ import json
 import numpy as np
 import hydroengine as hyd
 import econengine as econ
-from .coupling import HydroEconCoupling
+from coupling import HydroEconCoupling
 import rasterio as rio
 import tqdm
 
@@ -138,10 +138,12 @@ if __name__ == '__main__':
     parser.add_argument('network_file', help='stream network, shapefile or geojson format')
     parser.add_argument('basin_shp', help='shapefile with subcatchments for each node')
 
-    #parser.add_argument('--farms', type=str,  dest='restart', action='store_true')
-
     parser.add_argument('--restart', dest='restart', action='store_true')
 
+    subparser = parser.add_subparsers(help="economic module arguments")
+    econ_parser = subparser.add_parser("econ", help="economic module argumentsw")
+    econ_parser.add_argument("fn_farm_data", help="Json file with agricultural water user information ")
+    econ_parser.add_argument("scenario", help="json file with agroeconomic scenario information")
 
 
     args = parser.parse_args()

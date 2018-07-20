@@ -1,5 +1,7 @@
 from .context import utils
 import nose
+import numpy as np
+
 
 class TestCropCoefficient(object):
 
@@ -52,7 +54,8 @@ class TestCropCoefficient(object):
         end = ["09/12/2014", "09/1/2014", "09/2/2014"]
         cur_date = "10/25/2014"
         cropid = [15, 2, 7]   # Peas
-        res = utils.retrieve_crop_coefficient(cur_date, start, cover, end, cropid)
+        f = np.vectorize(utils.retrieve_crop_coefficient, excluded=cur_date)
+        res = f(cur_date, start, cover, end, cropid)
         print res
         #nose.tools.assert_true(0. <= res <= 1)
 
