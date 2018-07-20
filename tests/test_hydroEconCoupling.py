@@ -64,18 +64,15 @@ class TestHydroEconCoupling(object):
         for i, users in enumerate(self.coupling.farms_table[:, 1:][self.coupling.farm_idx]):
             np.testing.assert_array_equal(self.scenario[i].get('crop_start_date'),
                                           users.crop_start_date)
-        nose.tools.assert_is_instance(self.coupling.applied_water_factor[:, 1:][self.coupling.farm_idx][0], list)
 
     def test__calculate_applied_water_factor(self):
-
         self.coupling._calculate_applied_water_factor()
-        isinstance(self.coupling.applied_water_factor[:, 1:][self.coupling.farm_idx], list)
+        nose.tools.assert_is_instance(self.coupling.applied_water_factor[:, 1:][self.coupling.farm_idx][0], np.ndarray)
 
     def test_calculate_water_diversion_per_node(self):
         cur_date = "7/02/2014"
-        nose.tools.assert_is_instance(self.coupling.applied_water_factor[:, 1:][self.coupling.farm_idx][0], list)
         self.coupling.calculate_water_diversion_per_node(cur_date)
-        nose.tools.assert_is_instance(self.coupling.applied_water_factor[:, 1:][self.coupling.farm_idx][0], list)
+
 
 
 

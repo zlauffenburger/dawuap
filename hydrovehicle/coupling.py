@@ -18,7 +18,7 @@ class HydroEconCoupling(object):
         self.farms_table = self._build_water_user_matrix()
         self.farm_idx = np.where(self.farms_table[:, 1:])
 
-        self.applied_water_factor = self.farms_table.copy()
+        self.applied_water_factor = np.zeros_like(self.farms_table)
 
     @staticmethod
     def apply_to_all_members(sequence, attrib, *args, **kwargs):
@@ -45,7 +45,7 @@ class HydroEconCoupling(object):
                 if farm.get('source_id') == ids:
                     li.append(econ.Farm(**farm))
                 else:
-                    li.append(None)
+                    li.append(0)
             nodes.append(li)
         arr_nodes = np.array(nodes)
 
@@ -76,51 +76,29 @@ class HydroEconCoupling(object):
         current_kcs = vect_retrieve_kcs(date, s, c, e, cropid)
 
         # Obtain water simulated per crop
-        Xw = self.apply_to_all_members(self.farms_table[:, 1:][self.farm_idx], "watersim")
+        Xw = np.vstack(
+            self.apply_to_all_members(
+                self.farms_table[:, 1:][self.farm_idx], "watersim"
+            )
+            )
 
         # Obtain applied water factor
-        f = self.applied_water_factor[:, 1:][self.farm_idx]
+        f = np.vstack(self.applied_water_factor[:, 1:][self.farm_idx])
 
         # Calculated water diverted for each crop and farm
 
         # diversions per per farm, crop and node
-        d = Xw * current_kcs / f
+        d = Xw * np.divide(current_kcs, f, where=f!=0)
         D = self.farms_table.copy()
-        D[:, 1:][self.farm_idx] = d
+        D[:, 1:][self.farm_idx] = tuple(d)
 
         # Total diversions per node
         # First sum all waterdiverted per crop in each farm
-        dtot = [f.sum() for f in d]
+        dtot = [fm.sum() for fm in d]
         Dtot = self.farms_table.copy()
         Dtot[:, 1:][self.farm_idx] = dtot
         Dtot = np.vstack((Dtot[:, 0], Dtot[:, 1:].sum(axis=1)))
         return Dtot, D
-
-        # for i, farm in enumerate(self.farms_table[:, 1:][self.farm_idx]):
-        #     try:
-        #         dates = zip(farm.crop_start_date,
-        #                     farm.crop_cover_date,
-        #                     farm.crop_end_date,
-        #                     farm.crop_id)
-        #     except TypeError, e:
-        #         print "Water User %s does not have information on crop planting dates. Did you forget to " \
-        #               "simulate a scenario?" %farm.name
-        #         exit(-1)
-        #
-        #     lst_kc = []
-        #     for s, c, e, cropid, in dates:
-        #
-        #         date_array = [(parser.parse(s) + datetime.timedelta(days=x)).strftime("%m/%d/%Y")
-        #                       for x in range(0, (parser.parse(e) - parser.parse(s)).days + 1)]
-        #         lst_kc.append(
-        #               Kcs(date_array, s, c, e, cropid).sum() * farm.irr_eff * farm.irr
-        #         )
-        #         self.applied_water_factor[:, 1:][self.farm_idx][i] = np.array(lst_kc)
-        #
-        #
-        # # Obtains water simulated per crop
-        # wu = self.farms_table.copy()
-        # wu[:, 1:][self.farm_idx] = self.apply_to_all_members(self.farms_table[:, 1:][self.farm_idx], "watersim")
 
     def _calculate_applied_water_factor(self):
         """Sets member variable ``applied_water_factor``, a masked matrix of arrays with the water diversion
@@ -147,6 +125,7 @@ class HydroEconCoupling(object):
 
         Kcs = np.vectorize(retrieve_crop_coefficient)
 
+        lst_kc = []
         for i, farm in enumerate(self.farms_table[:, 1:][self.farm_idx]):
             try:
                 dates = zip(farm.crop_start_date,
@@ -160,13 +139,15 @@ class HydroEconCoupling(object):
                       "simulate a scenario?" %farm.name
                 exit(-1)
 
-            lst_kc = []
+            lst = []
             for s, c, e, cropid, i_eff, i_mask, in dates:
 
                 date_array = [(parser.parse(s) + datetime.timedelta(days=x)).strftime("%m/%d/%Y")
                               for x in range(0, (parser.parse(e) - parser.parse(s)).days + 1)]
-                lst_kc.append(
+                lst.append(
                       Kcs(date_array, s, c, e, cropid).sum() * i_eff * i_mask
                 )
-            np.place(self.applied_water_factor, self.applied_water_factor[:, 1:][self.farm_idx][i], np.array(lst_kc))
+            lst_kc.append(np.array(lst))
+
+        self.applied_water_factor[:, 1:][self.farm_idx] = lst_kc
 
