@@ -3,6 +3,8 @@ import econengine as econ
 from utils.crop_coefficient import retrieve_crop_coefficient
 from dateutil import parser
 import datetime
+import rasterio as rio
+from rasterio.features import rasterize
 
 __all__ = ['HydroEconCoupling']
 
@@ -10,7 +12,7 @@ __all__ = ['HydroEconCoupling']
 class HydroEconCoupling(object):
     """Couples the hydrologic and economic models"""
 
-    def __init__(self, routing_obj, water_users_lst):
+    def __init__(self, routing_obj, water_users_lst, precip_arr, water_user_shapes, transform):
 
         self.nodes = routing_obj
         self.water_users = water_users_lst
@@ -19,6 +21,8 @@ class HydroEconCoupling(object):
         self.farm_idx = np.where(self.farms_table[:, 1:])
 
         self.applied_water_factor = np.zeros_like(self.farms_table)
+
+        self.array_supplemental_irrigation = np.zeros_like(precip_arr)
 
     @staticmethod
     def apply_to_all_members(sequence, attrib, *args, **kwargs):
@@ -150,4 +154,13 @@ class HydroEconCoupling(object):
             lst_kc.append(np.array(lst))
 
         self.applied_water_factor[:, 1:][self.farm_idx] = lst_kc
+
+    def _rasterize_water_user_polygons(self, fn_water_user_shapes, fill, transform):
+
+        self.array_supplemental_irrigation = \
+            rasterize(fn_water_user_shapes,
+                      self.array_supplemental_irrigation.shape,
+                      fill=fill,
+                      transform=transform)
+
 
