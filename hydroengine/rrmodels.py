@@ -5,7 +5,6 @@ import numpy as np
 import rasterstats as rst
 import rasterio as rio
 
-
 class Soil(object):
     def __init__(self, ur=0., lr=0., q0=0., q1=0., q2=0., qall=0., base=25):
 
@@ -167,6 +166,7 @@ class HBV(RRmodel):
 
     def precipitation_excess(self, shp_wtshds, affine=None, stats=['mean'], **kwargs):
 
+        affine = affine
         # builds a geojson object with required statistics for each catchment
         #print "Calculating zonal statistics for each HRU..."
         nodata = kwargs['nodata'] if kwargs.has_key('nodata') else -32767

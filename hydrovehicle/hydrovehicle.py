@@ -143,8 +143,7 @@ if __name__ == '__main__':
     subparser = parser.add_subparsers(help="economic module arguments")
     econ_parser = subparser.add_parser("econ", help="economic module argumentsw")
     econ_parser.add_argument("fn_farm_data", help="Json file with agricultural water user information ")
-    econ_parser.add_argument("scenario", help="json file with agroeconomic scenario information")
-
+    econ_parser.add_argument("fn_scenario", help="json file with agroeconomic scenario information")
 
     args = parser.parse_args()
     main(args)

@@ -53,7 +53,7 @@ class TestHydroEconCoupling(object):
         pass
 
     def test__init__(self):
-        a = HydroEconCoupling(self.mc, self.lst_farmsm, self.pp_data, self.affine)
+        a = HydroEconCoupling(self.mc, self.lst_farms, self.pp_data, self.affine)
         nose.tools.assert_is_instance(a, HydroEconCoupling)
         nose.tools.assert_is_instance(a.nodes, hyd.Routing)
         nose.tools.assert_is_instance(a.water_users, list)
