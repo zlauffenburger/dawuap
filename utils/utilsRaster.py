@@ -23,7 +23,7 @@ class ReadRaster(object):
         with rio.open(self.fn_base_raster, 'r') as src:
             self.profile = src.profile
             self.shape = src.shape
-            self.affine = src.affine
+            self.affine = src.transform
             self.nodata = int(src.nodata)
             self.array = src.read(band)
 

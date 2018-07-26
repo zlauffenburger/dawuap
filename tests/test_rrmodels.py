@@ -115,7 +115,7 @@ class TestHBV(object):
 
         precip = rio.open('test_data/PRCP201301_thematic.tif')
         #precip = rio.open('test_data/DEM_64m_1992.tif')
-        affine = precip.affine
+        affine = precip.transform
         runoff = precip.read()
         self.ohbv.ovlnd_flow = runoff[0, :, :]
         assert(isinstance(self.ohbv.ovlnd_flow, np.ndarray))
@@ -127,7 +127,7 @@ class TestHBV(object):
     def test_precipitation_excess_soilfile(self):
         precip = rio.open('test_data/PRCP201301_thematic.tif')
         # precip = rio.open('test_data/DEM_64m_1992.tif')
-        affine = precip.affine
+        affine = precip.transform
         runoff = precip.read()
         self.ohbv.ovlnd_flow = runoff[0, :, :]
         assert (isinstance(self.ohbv.ovlnd_flow, np.ndarray))

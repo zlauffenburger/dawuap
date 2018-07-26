@@ -1,5 +1,6 @@
 import numpy as np
 import econengine as econ
+import utils
 from utils.crop_coefficient import retrieve_crop_coefficient
 from dateutil import parser
 import datetime
@@ -12,7 +13,7 @@ __all__ = ['HydroEconCoupling']
 class HydroEconCoupling(object):
     """Couples the hydrologic and economic models"""
 
-    def __init__(self, routing_obj, water_users_lst, precip_arr, water_user_shapes, transform):
+    def __init__(self, routing_obj, water_users_lst, precip_arr, transform):
 
         self.nodes = routing_obj
         self.water_users = water_users_lst
@@ -23,6 +24,8 @@ class HydroEconCoupling(object):
         self.applied_water_factor = np.zeros_like(self.farms_table)
 
         self.array_supplemental_irrigation = np.zeros_like(precip_arr)
+
+        self.transform = transform
 
     @staticmethod
     def apply_to_all_members(sequence, attrib, *args, **kwargs):
@@ -155,12 +158,15 @@ class HydroEconCoupling(object):
 
         self.applied_water_factor[:, 1:][self.farm_idx] = lst_kc
 
-    def _rasterize_water_user_polygons(self, fn_water_user_shapes, fill, transform):
+    def _rasterize_water_user_polygons(self, fn_water_user_shapes, fill):
 
-        self.array_supplemental_irrigation = \
-            rasterize(fn_water_user_shapes,
-                      self.array_supplemental_irrigation.shape,
-                      fill=fill,
-                      transform=transform)
+        shapes = utils.VectorParameterIO(fn_water_user_shapes).read_features()
+
+        t = self.array_supplemental_irrigation = \
+           rasterize(shapes,
+                     self.array_supplemental_irrigation.shape,
+                     fill=fill,
+                     transform=self.transform)
+        return t
 
 

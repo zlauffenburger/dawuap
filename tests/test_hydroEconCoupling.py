@@ -33,7 +33,12 @@ class TestHydroEconCoupling(object):
 
         self.scenario = scenario
 
-        self.coupling = HydroEconCoupling(self.mc, self.lst_farms)
+        precip = utils.RasterParameterIO('./test_data/precip.nc')
+        self.affine = precip.transform
+        self.pp_data = precip.array.clip(min=0)[0, :, :]
+
+        self.coupling = HydroEconCoupling(self.mc, self.lst_farms,
+                                          self.pp_data, self.affine)
 
         self.coupling.simulate_all_users(self.scenario)
 
@@ -48,7 +53,7 @@ class TestHydroEconCoupling(object):
         pass
 
     def test__init__(self):
-        a = HydroEconCoupling(self.mc, self.lst_farms)
+        a = HydroEconCoupling(self.mc, self.lst_farmsm, self.pp_data, self.affine)
         nose.tools.assert_is_instance(a, HydroEconCoupling)
         nose.tools.assert_is_instance(a.nodes, hyd.Routing)
         nose.tools.assert_is_instance(a.water_users, list)
@@ -72,6 +77,11 @@ class TestHydroEconCoupling(object):
     def test_calculate_water_diversion_per_node(self):
         cur_date = "7/02/2014"
         self.coupling.calculate_water_diversion_per_node(cur_date)
+
+    def test__rasterize_water_user_polygons(self):
+        self.coupling._rasterize_water_user_polygons('./test_data/Counties.shp', 0, )
+
+
 
 
 
