@@ -162,8 +162,13 @@ class HydroEconCoupling(object):
 
         shapes = utils.VectorParameterIO(fn_water_user_shapes).read_features()
 
+
+        feats = ((g['geometry'], g['properties']['ORIG_FID']) for g in shapes)
+
+
+
         t = self.array_supplemental_irrigation = \
-           rasterize(shapes,
+           rasterize(feats,
                      self.array_supplemental_irrigation.shape,
                      fill=fill,
                      transform=self.transform)
