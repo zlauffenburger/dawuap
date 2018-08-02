@@ -158,20 +158,23 @@ class HydroEconCoupling(object):
 
         self.applied_water_factor[:, 1:][self.farm_idx] = lst_kc
 
-    def _rasterize_water_user_polygons(self, fn_water_user_shapes, fill):
+    def _rasterize_water_user_polygons(self, fn_water_user_shapes, property_field_name, fill):
+        """
+        returns a 2D array with rows and cols shape like precipitation inputs
+        and vector features pointed by `fn_water_user_shapes` burned in. Burn-in values are these provided by
+        `property_field_name`. The function also updates self.array_supplemental_irrigation with the returned array.
+        """
 
         shapes = utils.VectorParameterIO(fn_water_user_shapes).read_features()
 
-
-        feats = ((g['geometry'], g['properties']['ORIG_FID']) for g in shapes)
-
-
+        feats = ((g['geometry'], g['properties'][property_field_name]) for g in shapes)
 
         t = self.array_supplemental_irrigation = \
            rasterize(feats,
                      self.array_supplemental_irrigation.shape,
                      fill=fill,
                      transform=self.transform)
+
         return t
 
 
