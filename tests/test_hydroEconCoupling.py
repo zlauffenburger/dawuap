@@ -79,7 +79,12 @@ class TestHydroEconCoupling(object):
         self.coupling.calculate_water_diversion_per_node(cur_date)
 
     def test__rasterize_water_user_polygons(self):
+        ref_counties = utils.RasterParameterIO('./test_data/counties.tif')
+        affine = ref_counties.transform
+        ref_data = np.squeeze(ref_counties.array)
+
         im = self.coupling._rasterize_water_user_polygons('./test_data/Counties.shp', 'ORIG_FID', 0)
+        np.testing.assert_array_equal(ref_data, im)
 
 
 
