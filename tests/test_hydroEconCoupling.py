@@ -86,6 +86,38 @@ class TestHydroEconCoupling(object):
         im = self.coupling._rasterize_water_user_polygons('./test_data/Counties.shp', 'ORIG_FID', 0)
         np.testing.assert_array_equal(ref_data, im)
 
+    def test__rasterize_water_user_polygons_geojson(self):
+        ref_counties = utils.RasterParameterIO('./test_data/counties.tif')
+        affine = ref_counties.transform
+        ref_data = np.squeeze(ref_counties.array)
+
+        im = self.coupling._rasterize_water_user_polygons('./test_data/Counties.geojson', 'ORIG_FID', 0)
+        np.testing.assert_array_equal(ref_data, im)
+
+    def test_setup_farmer_user(self):
+        ref_counties = utils.RasterParameterIO('./test_data/counties.tif')
+        affine = ref_counties.transform
+        ref_data = np.squeeze(ref_counties.array)
+
+        self.coupling.setup_farmer_user('./test_data/Counties.geojson', 'ORIG_FID', fill_value=0)
+        im = self.coupling.water_user_mask
+        np.testing.assert_array_equal(ref_data, im)
+
+    @nose.tools.raises(TypeError)
+    def test_calculate_supplemental_irrigation_rates_typeerror(self):
+        self.coupling.calculate_supplemental_irrigation_rates(self.lst_farms, (12, 14))
+
+    @nose.tools.raises(ValueError)
+    def test_calculate_supplemental_irrigation_rates_valueerror(self):
+        self.coupling.calculate_supplemental_irrigation_rates('./test_data/counties.tif', (12, 14))
+
+    def test_calculate_supplemental_irrigation_rates(self):
+        ref_counties = utils.RasterParameterIO('./test_data/LCType_mt.tif')
+        ref_data = np.squeeze(ref_counties.array)
+        self.coupling.setup_farmer_user('./test_data/Counties.geojson', 'ORIG_FID', fill_value=0)\
+            .calculate_supplemental_irrigation_rates(ref_data, (12, 14))
+
+
 
 
 

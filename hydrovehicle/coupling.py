@@ -25,6 +25,8 @@ class HydroEconCoupling(object):
 
         self.array_supplemental_irrigation = np.zeros_like(precip_arr)
 
+        self.water_user_mask = np.zeros_like(precip_arr)
+
         self.transform = transform
 
     @staticmethod
@@ -40,6 +42,25 @@ class HydroEconCoupling(object):
                 lst.append(getattr(obj, attrib))
 
         return lst
+
+    def setup_farmer_user(self, water_user_shapes, id_field, **kwargs):
+        # type: (str, str) -> self
+        """Sets the spatial location of farm water users.
+        It takes a shape or geojson polygon file with an id field to provide geographical context to water users.
+
+        Parameters
+        ==========
+
+        :param water_user_shapes: shape or geojson filename
+        :param id_field: name of field in 'water_user_sapes' with farm integer farm IDs
+
+        Returns
+        =======
+        :returns: HydroEconCoupling object
+        """
+        self.water_user_mask = self._rasterize_water_user_polygons(water_user_shapes, id_field, kwargs['fill_value'])
+
+        return self
 
     def _build_water_user_matrix(self):
         """ Loop through nodes in the network, find farms diverting from it and construct matrix of
@@ -59,7 +80,7 @@ class HydroEconCoupling(object):
         return arr_nodes
 
     def simulate_all_users(self, lst_scenarios):
-        # type: (list) -> None
+        # type: (list) -> HydroEconCoupling
 
         for obs in lst_scenarios:
             for farm in self.farms_table[:, 1:][self.farm_idx]:
@@ -68,8 +89,18 @@ class HydroEconCoupling(object):
 
         self._calculate_applied_water_factor()
 
+        return self
+
     def calculate_water_diversion_per_node(self, date):
-        """Returns a """
+        """Returns a vector and a matrix of length ``num_nodes`` and ``num_nodes x ``num_water_users`` with
+         total water diverted from each node and water diverted from each node by each user diverting form the node,
+         respectively.
+
+         Parameters
+         ==========
+         :param date: date for which the diversions are required are required
+
+         """
 
         # obtain vector of crop coefficients
         vect_retrieve_kcs = np.vectorize(retrieve_crop_coefficient, excluded=['current_date'])
@@ -169,12 +200,35 @@ class HydroEconCoupling(object):
 
         feats = ((g['geometry'], g['properties'][property_field_name]) for g in shapes)
 
-        t = self.array_supplemental_irrigation = \
+        t = self.water_user_mask = \
            rasterize(feats,
                      self.array_supplemental_irrigation.shape,
                      fill=fill,
                      transform=self.transform)
 
         return t
+
+    def calculate_supplemental_irrigation_rates(self, array_land_use, irr_ag_ids):
+
+        if isinstance(array_land_use, np.ndarray):
+            lu = array_land_use
+        elif isinstance(array_land_use, basestring):
+            lu = utils.RasterParameterIO(array_land_use).array
+
+        else:
+            raise TypeError('Incorrect type for argument array_land_use')
+
+        if lu.shape != self.water_user_mask.shape:
+            raise ValueError("rasters do not line up with shapes: " +
+                                 str(lu.shape) + str(self.water_user_mask))
+
+        for farm in self.water_users:
+            id = farm.get('id')
+            m = np.count_nonzero(np.isin(lu, irr_ag_ids) & (self.water_user_mask ==  id))
+            self.array_supplemental_irrigation[np.isin(lu, irr_ag_ids) & (self.water_user_mask == id)] = id
+
+
+
+
 
 

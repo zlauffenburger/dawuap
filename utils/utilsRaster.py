@@ -15,7 +15,7 @@ class ReadRaster(object):
         self.profile = None
         self.shape = None
         self.affine = None
-        self.nodata = None
+        self.nodata = -9999
         self.array = None
         self._read_base_raster(band)
 
@@ -24,7 +24,8 @@ class ReadRaster(object):
             self.profile = src.profile
             self.shape = src.shape
             self.transform = src.transform
-            self.nodata = int(src.nodata)
+            if src.nodata is not None:
+                self.nodata = int(src.nodata)
             self.array = src.read(band)
 
     def update_raster(self, fn_new_raster, band=None):
