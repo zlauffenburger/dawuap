@@ -91,9 +91,9 @@ class HydroEconCoupling(object):
 
         return self
 
-    def calculate_water_diversion_per_node(self, date):
-        """Returns a vector and a matrix of length ``num_nodes`` and ``num_nodes x ``num_water_users`` with
-         total water diverted from each node and water diverted from each node by each user diverting form the node,
+    def calculate_water_diversion_per_node(self, date,  array_land_use, irr_ag_ids,):
+        """Returns a vector and a matrix of length ``num_nodes`` and ``num_nodes x num_water_users`` with
+         total water diverted from each node and water diverted from each node and user,
          respectively.
 
          Parameters
@@ -126,17 +126,46 @@ class HydroEconCoupling(object):
         # Calculated water diverted for each crop and farm
 
         # diversions per per farm, crop and node
-        d = Xw * np.divide(current_kcs, f, where=f!=0)
+        d = Xw * np.divide(current_kcs, f, where=f != 0)
         D = self.farms_table.copy()
         D[:, 1:][self.farm_idx] = tuple(d)
 
         # Total diversions per node
-        # First sum all waterdiverted per crop in each farm
+        # First sum all water diverted per crop in each farm
         dtot = [fm.sum() for fm in d]
         Dtot = self.farms_table.copy()
         Dtot[:, 1:][self.farm_idx] = dtot
         Dtot = np.vstack((Dtot[:, 0], Dtot[:, 1:].sum(axis=1)))
+
+
+
         return Dtot, D
+
+    def _calculate_supplemental_irrigation_rates(self, array_land_use, irr_ag_ids, water_diversion_table):
+        """Returns an array with the supplemental irrigation rate on pixels in array ``array_land_use`` with
+        id ``irr_ag_ids`` resulting from spreading evenly in space water diverted by water users as provided in
+        ``water_diversion_table``"""
+
+        if isinstance(array_land_use, np.ndarray):
+            lu = array_land_use
+        elif isinstance(array_land_use, basestring):
+            lu = utils.RasterParameterIO(array_land_use).array
+
+        else:
+            raise TypeError('Incorrect type for argument array_land_use')
+
+        if lu.shape != self.water_user_mask.shape:
+            raise ValueError("rasters do not line up with shapes: " +
+                             str(lu.shape) + str(self.water_user_mask))
+
+        for i, farm in enumerate(self.water_users):
+            farm_id = farm.get('id')
+            m = np.count_nonzero(np.isin(lu, irr_ag_ids) & (self.water_user_mask == farm_id))
+            applied_water = np.apply_along_axis(np.sum, 0, water_diversion_table[:, i + 1]).sum()
+            self.array_supplemental_irrigation[np.isin(lu, irr_ag_ids)
+                                               &
+                                               (self.water_user_mask == farm_id)] = applied_water/m
+            return self.array_supplemental_irrigation
 
     def _calculate_applied_water_factor(self):
         """Sets member variable ``applied_water_factor``, a masked matrix of arrays with the water diversion
@@ -207,28 +236,6 @@ class HydroEconCoupling(object):
                      transform=self.transform)
 
         return t
-
-    def calculate_supplemental_irrigation_rates(self, array_land_use, irr_ag_ids):
-
-        if isinstance(array_land_use, np.ndarray):
-            lu = array_land_use
-        elif isinstance(array_land_use, basestring):
-            lu = utils.RasterParameterIO(array_land_use).array
-
-        else:
-            raise TypeError('Incorrect type for argument array_land_use')
-
-        if lu.shape != self.water_user_mask.shape:
-            raise ValueError("rasters do not line up with shapes: " +
-                                 str(lu.shape) + str(self.water_user_mask))
-
-        for farm in self.water_users:
-            id = farm.get('id')
-            m = np.count_nonzero(np.isin(lu, irr_ag_ids) & (self.water_user_mask ==  id))
-            self.array_supplemental_irrigation[np.isin(lu, irr_ag_ids) & (self.water_user_mask == id)] = id
-
-
-
 
 
 

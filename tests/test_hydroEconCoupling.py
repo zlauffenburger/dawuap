@@ -104,18 +104,19 @@ class TestHydroEconCoupling(object):
         np.testing.assert_array_equal(ref_data, im)
 
     @nose.tools.raises(TypeError)
-    def test_calculate_supplemental_irrigation_rates_typeerror(self):
-        self.coupling.calculate_supplemental_irrigation_rates(self.lst_farms, (12, 14))
+    def test__calculate_supplemental_irrigation_rates_typeerror(self):
+        self.coupling._calculate_supplemental_irrigation_rates(self.lst_farms, (12, 14))
 
     @nose.tools.raises(ValueError)
-    def test_calculate_supplemental_irrigation_rates_valueerror(self):
-        self.coupling.calculate_supplemental_irrigation_rates('./test_data/counties.tif', (12, 14))
+    def test__calculate_supplemental_irrigation_rates_valueerror(self):
+        self.coupling._calculate_supplemental_irrigation_rates('./test_data/counties.tif', (12, 14))
 
-    def test_calculate_supplemental_irrigation_rates(self):
+    def test__calculate_supplemental_irrigation_rates(self):
         ref_counties = utils.RasterParameterIO('./test_data/LCType_mt.tif')
         ref_data = np.squeeze(ref_counties.array)
+        _, water_use_table = self.coupling.calculate_water_diversion_per_node("7/02/2014")
         self.coupling.setup_farmer_user('./test_data/Counties.geojson', 'ORIG_FID', fill_value=0)\
-            .calculate_supplemental_irrigation_rates(ref_data, (12, 14))
+            ._calculate_supplemental_irrigation_rates(ref_data, (12, 14), water_use_table)
 
 
 
