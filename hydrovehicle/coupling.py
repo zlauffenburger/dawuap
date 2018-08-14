@@ -21,9 +21,7 @@ class HydroEconCoupling(object):
         self.farms_table = self._build_water_user_matrix()
         self.farm_idx = np.where(self.farms_table[:, 1:])
 
-        self.applied_water_factor = np.zeros_like(self.farms_table)
-
-        self.array_supplemental_irrigation = np.zeros_like(precip_arr)
+        # self.array_supplemental_irrigation = np.zeros_like(precip_arr)
 
         self.water_user_mask = np.zeros_like(precip_arr)
 
@@ -80,18 +78,51 @@ class HydroEconCoupling(object):
         return arr_nodes
 
     def simulate_all_users(self, lst_scenarios):
-        # type: (list) -> HydroEconCoupling
+        # type: (list) -> FarmCoupling
 
         for obs in lst_scenarios:
             for farm in self.farms_table[:, 1:][self.farm_idx]:
                 if obs.get("farm_id") == farm.source_id:
                     farm.simulate(**obs)
 
+        return FarmCoupling(self.water_users, self.farms_table, self.farm_idx, self.water_user_mask)
+
+    def _rasterize_water_user_polygons(self, fn_water_user_shapes, property_field_name, fill):
+        """
+        returns a 2D array with rows and cols shape like precipitation inputs
+        and vector features pointed by `fn_water_user_shapes` burned in. Burn-in values are these provided by
+        `property_field_name`. The function also updates self.array_supplemental_irrigation with the returned array.
+        """
+
+        shapes = utils.VectorParameterIO(fn_water_user_shapes).read_features()
+
+        feats = ((g['geometry'], g['properties'][property_field_name]) for g in shapes)
+
+        t = self.water_user_mask = \
+            rasterize(feats,
+                      self.water_user_mask.shape,
+                      fill=fill,
+                      transform=self.transform)
+
+        return t
+
+
+class FarmCoupling(object):
+
+    def __init__(self, water_users_lst, farm_table, farm_idx, water_user_mask):
+
+        self.water_users = water_users_lst
+        self.farms_table = farm_table
+        self.farm_idx = farm_idx
+        self.water_user_mask = water_user_mask
+
+        self.applied_water_factor = np.zeros_like(self.farms_table)
+
+        self.array_supplemental_irrigation = np.zeros_like(self.water_user_mask)
+
         self._calculate_applied_water_factor()
 
-        return self
-
-    def calculate_water_diversion_per_node(self, date,  array_land_use, irr_ag_ids,):
+    def retrieve_water_diversion_per_node(self, date):
         """Returns a vector and a matrix of length ``num_nodes`` and ``num_nodes x num_water_users`` with
          total water diverted from each node and water diverted from each node and user,
          respectively.
@@ -106,19 +137,19 @@ class HydroEconCoupling(object):
         vect_retrieve_kcs = np.vectorize(retrieve_crop_coefficient, excluded=['current_date'])
 
         # Obtains water simulated per crop
-        s = self.apply_to_all_members(self.farms_table[:, 1:][self.farm_idx], "crop_start_date")
-        c = self.apply_to_all_members(self.farms_table[:, 1:][self.farm_idx], "crop_cover_date")
-        e = self.apply_to_all_members(self.farms_table[:, 1:][self.farm_idx], "crop_end_date")
-        cropid = self.apply_to_all_members(self.farms_table[:, 1:][self.farm_idx], "crop_id")
+        s = HydroEconCoupling.apply_to_all_members(self.farms_table[:, 1:][self.farm_idx], "crop_start_date")
+        c = HydroEconCoupling.apply_to_all_members(self.farms_table[:, 1:][self.farm_idx], "crop_cover_date")
+        e = HydroEconCoupling.apply_to_all_members(self.farms_table[:, 1:][self.farm_idx], "crop_end_date")
+        cropid = HydroEconCoupling.apply_to_all_members(self.farms_table[:, 1:][self.farm_idx], "crop_id")
 
         current_kcs = vect_retrieve_kcs(date, s, c, e, cropid)
 
         # Obtain water simulated per crop
         Xw = np.vstack(
-            self.apply_to_all_members(
+            HydroEconCoupling.apply_to_all_members(
                 self.farms_table[:, 1:][self.farm_idx], "watersim"
             )
-            )
+        )
 
         # Obtain applied water factor
         f = np.vstack(self.applied_water_factor[:, 1:][self.farm_idx])
@@ -137,11 +168,9 @@ class HydroEconCoupling(object):
         Dtot[:, 1:][self.farm_idx] = dtot
         Dtot = np.vstack((Dtot[:, 0], Dtot[:, 1:].sum(axis=1)))
 
-
-
         return Dtot, D
 
-    def _calculate_supplemental_irrigation_rates(self, array_land_use, irr_ag_ids, water_diversion_table):
+    def retrieve_supplemental_irrigation_map(self, array_land_use, irr_ag_ids, water_diversion_table):
         """Returns an array with the supplemental irrigation rate on pixels in array ``array_land_use`` with
         id ``irr_ag_ids`` resulting from spreading evenly in space water diverted by water users as provided in
         ``water_diversion_table``"""
@@ -162,10 +191,16 @@ class HydroEconCoupling(object):
             farm_id = farm.get('id')
             m = np.count_nonzero(np.isin(lu, irr_ag_ids) & (self.water_user_mask == farm_id))
             applied_water = np.apply_along_axis(np.sum, 0, water_diversion_table[:, i + 1]).sum()
-            self.array_supplemental_irrigation[np.isin(lu, irr_ag_ids)
-                                               &
-                                               (self.water_user_mask == farm_id)] = applied_water/m
-            return self.array_supplemental_irrigation
+            if m == 0:
+                print("WARNING: water user with id %i is irrigating but water user mask does not contain"
+                      " irrigated pixels") %farm_id
+
+            self.array_supplemental_irrigation = np.where(np.isin(lu, irr_ag_ids) &
+                                                                 (self.water_user_mask == farm_id),
+                                                          applied_water / m,
+                                                          self.array_supplemental_irrigation)
+
+        return self.array_supplemental_irrigation
 
     def _calculate_applied_water_factor(self):
         """Sets member variable ``applied_water_factor``, a masked matrix of arrays with the water diversion
@@ -217,25 +252,4 @@ class HydroEconCoupling(object):
             lst_kc.append(np.array(lst))
 
         self.applied_water_factor[:, 1:][self.farm_idx] = lst_kc
-
-    def _rasterize_water_user_polygons(self, fn_water_user_shapes, property_field_name, fill):
-        """
-        returns a 2D array with rows and cols shape like precipitation inputs
-        and vector features pointed by `fn_water_user_shapes` burned in. Burn-in values are these provided by
-        `property_field_name`. The function also updates self.array_supplemental_irrigation with the returned array.
-        """
-
-        shapes = utils.VectorParameterIO(fn_water_user_shapes).read_features()
-
-        feats = ((g['geometry'], g['properties'][property_field_name]) for g in shapes)
-
-        t = self.water_user_mask = \
-           rasterize(feats,
-                     self.array_supplemental_irrigation.shape,
-                     fill=fill,
-                     transform=self.transform)
-
-        return t
-
-
 
