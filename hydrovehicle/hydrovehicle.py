@@ -8,7 +8,6 @@ import pickle
 import json
 import numpy as np
 import hydroengine as hyd
-import hydrovehicle
 import tqdm
 
 def main(argc):
@@ -72,6 +71,7 @@ def main(argc):
 
     # creates mock coupler
     simulated_water_users = utils.coupling.StrawFarmCoupling()
+    irr_ids = arr_land_use = 0
     if argc.econengine is not None:
         print "Economic module activated, generating water users and coupling objects... "
         # Open water user object
@@ -93,6 +93,12 @@ def main(argc):
         # simulates all users with loaded scenarios
         simulated_water_users = coupler.simulate_all_users(scenarios)
 
+        arr_land_use = utils.RasterParameterIO(argc.econengine[4])
+        arr_land_use = np.squeeze(arr_land_use.array)
+        irr_ids = argc.econengine[5]
+
+
+
 
     ro_ts = []
     Q_ts = []
@@ -107,14 +113,19 @@ def main(argc):
 
             cur_date = (parse(init_date) + i * datetime.timedelta(seconds=rr.dt)).strftime("%Y%m%d")
 
-            water_diversion = simulated_water_users.retrieve_water_diversion_per_node(cur_date)
-            suppl_irr = simulated_water_users.retrieve_supplemental_irrigation_map()
+            water_diversion, water_diversion_table = \
+                simulated_water_users.retrieve_water_diversion_per_node(cur_date)
+            suppl_irr = simulated_water_users.retrieve_supplemental_irrigation_map(arr_land_use,
+                                                                                   irr_ids,
+                                                                                   water_diversion_table)
 
             # Calculate potential evapotranspiration
             pet = hyd.hamon_pe((tmin_data[i, :, :] + tmax_data[i, :, :]) * 0.5, lat, i)
             runoff = rr.run_time_step(pp_data[i, :, :] + suppl_irr, tmax_data[i, :, :], tmin_data[i, :, :], pet, argc.basin_shp,
                                       affine=tmax_affine, nodata=pp_nodata)
             # runoff[1] = runoff[-1] = 0
+
+            qold = qold - water_diversion.T[:, 1]
 
             Q = mc.muskingum_routing(Q, ks, e, np.array(runoff), qold)
             qold = np.array(runoff)  # np.insert(runoff, 3, 0)
@@ -148,22 +159,16 @@ if __name__ == '__main__':
 
     parser.add_argument('--restart', dest='restart', action='store_true')
 
-    parser.add_argument('-econengine', required=False, default=None, nargs=5,
+    parser.add_argument('-econengine', required=False, default=None, nargs=6,
                         metavar=('fn_farm_data_json', 'fn_scenario_data_json', 'fn_water_user_shapes',
-                                 'lu_raster', 'lu_irr_id'),
+                                 'ID_field', 'lu_raster', 'lu_irr_id'),
                         help="Activates the economic engine of agricultural production. ")
-
-    #subparser = parser.add_subparsers(help="economic module arguments")
-    #subparser.required = False
-    #econ_parser = subparser.add_parser("econengine", help="economic module argumentsw")
-    #econ_parser.add_argument("fn_farm_data", help="Json file with agricultural water user information ")
-    #econ_parser.add_argument("fn_scenario", help="json file with agroeconomic scenario information")
 
     if __debug__:
         args = parser.parse_args("08/31/2012 precip_F2012-09-01_T2013-08-31.nc tempmin_F2012-09-01_T2013-08-31.nc"
-                             " tempmax_F2012-09-01_T2013-08-31.nc"
-                             " param_files_test.json rivout.shp subsout.shp "
-                                 "-econengine Farms.json Scenario.json Counties.geojson ORIG_FID LCType_mt.tiff ".split())
+                " tempmax_F2012-09-01_T2013-08-31.nc"
+                " param_files_test.json rivout.shp subsout.shp "
+                "-econengine Farms.json Scenario.json Counties.geojson ORIG_FID LCType_mt.tif (12,14)".split())
     else:
         args = parser.parse_args()
     main(args)

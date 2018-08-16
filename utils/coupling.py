@@ -17,7 +17,7 @@ class StrawFarmCoupling(object):
 
     @staticmethod
     def retrieve_water_diversion_per_node(*args):
-        return 0
+        return 0, 0
 
 
 class HydroEconCoupling(object):
@@ -200,8 +200,8 @@ class FarmCoupling(object):
             raise TypeError('Incorrect type for argument array_land_use')
 
         if lu.shape != self.water_user_mask.shape:
-            raise ValueError("rasters do not line up with shapes: " +
-                             str(lu.shape) + str(self.water_user_mask))
+            raise ValueError("Land user rasters do not line up with shapes: " +
+                             str(lu.shape) + str(self.water_user_mask.shape))
 
         for i, farm in enumerate(self.water_users):
             farm_id = farm.get('id')
