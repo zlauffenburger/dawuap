@@ -1,6 +1,6 @@
+from setuptools import find_packages
 try:
     from setuptools import setup
-    from setuptools import find_packages
 except ImportError:
     from distutils.core import setup
 

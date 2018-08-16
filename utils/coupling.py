@@ -7,7 +7,17 @@ import datetime
 import rasterio as rio
 from rasterio.features import rasterize
 
-__all__ = ['HydroEconCoupling']
+__all__ = ['HydroEconCoupling', 'StrawFarmCoupling']
+
+
+class StrawFarmCoupling(object):
+    @staticmethod
+    def retrieve_supplemental_irrigation_map(*args):
+        return 0
+
+    @staticmethod
+    def retrieve_water_diversion_per_node(*args):
+        return 0
 
 
 class HydroEconCoupling(object):
@@ -56,7 +66,7 @@ class HydroEconCoupling(object):
         =======
         :returns: HydroEconCoupling object
         """
-        self.water_user_mask = self._rasterize_water_user_polygons(water_user_shapes, id_field, kwargs['fill_value'])
+        self.water_user_mask = self._rasterize_water_user_polygons(water_user_shapes, id_field, **kwargs)
 
         return self
 
@@ -87,16 +97,22 @@ class HydroEconCoupling(object):
 
         return FarmCoupling(self.water_users, self.farms_table, self.farm_idx, self.water_user_mask)
 
-    def _rasterize_water_user_polygons(self, fn_water_user_shapes, property_field_name, fill):
+    def _rasterize_water_user_polygons(self, fn_water_user_shapes, property_field_name, **kwargs):
         """
         returns a 2D array with rows and cols shape like precipitation inputs
         and vector features pointed by `fn_water_user_shapes` burned in. Burn-in values are these provided by
         `property_field_name`. The function also updates self.array_supplemental_irrigation with the returned array.
         """
-
+        fill = kwargs.get('fill_value', 0)
         shapes = utils.VectorParameterIO(fn_water_user_shapes).read_features()
 
-        feats = ((g['geometry'], g['properties'][property_field_name]) for g in shapes)
+        try:
+            feats = ((g['geometry'], g['properties'][property_field_name]) for g in shapes)
+        except KeyError, e:
+            print "field name %s does not exist in water user polygon file" %str(property_field_name)
+            print e
+            exit(-1)
+
 
         t = self.water_user_mask = \
             rasterize(feats,

@@ -29,7 +29,7 @@ def retrieve_crop_coefficient(current_date, start_date, cover_date, end_date,
 
     """
 
-    df_kc = pd.read_table(DATA_PATH + kc_table, index_col="crop_id")
+    df_kc = pd.read_table(DATA_PATH + '/' + kc_table, index_col="crop_id")
     current_date = parser.parse(current_date)
     start_date = parser.parse(start_date)
     cover_date = parser.parse(cover_date)

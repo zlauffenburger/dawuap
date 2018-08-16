@@ -1,8 +1,8 @@
 import numpy as np
 import utils
-from hydrovehicle.coupling import HydroEconCoupling
+from utils.coupling import HydroEconCoupling
+from utils.coupling import StrawFarmCoupling
 import hydroengine as hyd
-import econengine as econ
 import json
 import nose
 
@@ -75,7 +75,7 @@ class TestHydroEconCoupling(object):
         affine = ref_counties.transform
         ref_data = np.squeeze(ref_counties.array)
 
-        im = self.coupling._rasterize_water_user_polygons('./test_data/Counties.shp', 'ORIG_FID', 0)
+        im = self.coupling._rasterize_water_user_polygons('./test_data/Counties.shp', 'ORIG_FID', fill_value=0)
         np.testing.assert_array_equal(ref_data, im)
 
     def test__rasterize_water_user_polygons_geojson(self):
@@ -83,7 +83,16 @@ class TestHydroEconCoupling(object):
         affine = ref_counties.transform
         ref_data = np.squeeze(ref_counties.array)
 
-        im = self.coupling._rasterize_water_user_polygons('./test_data/Counties.geojson', 'ORIG_FID', 0)
+        im = self.coupling._rasterize_water_user_polygons('./test_data/Counties.geojson', 'ORIG_FID', fill_value=0)
+        np.testing.assert_array_equal(ref_data, im)
+
+    @nose.tools.raises(KeyError)
+    def test__rasterize_water_user_polygons_throws_key_error(self):
+        ref_counties = utils.RasterParameterIO('./test_data/counties.tif')
+        affine = ref_counties.transform
+        ref_data = np.squeeze(ref_counties.array)
+
+        im = self.coupling._rasterize_water_user_polygons('./test_data/Counties.geojson', 'BAD_ID', fill_value=0)
         np.testing.assert_array_equal(ref_data, im)
 
     def test_setup_farmer_user(self):
@@ -172,3 +181,17 @@ class TestFarmCoupling(object):
         cur_date = "7/02/2014"
         self.farm_coupling.retrieve_water_diversion_per_node(cur_date)
 
+
+class TestStrawFarmCoupling(object):
+
+    @classmethod
+    def setup_class(self):
+        self.straw = StrawFarmCoupling()
+
+    def test_retrieve_water_diversion_per_node(self):
+        zero = self.straw.retrieve_supplemental_irrigation_map()
+        nose.tools.assert_equal(0, zero)
+
+    def test_retrieve_water_diversion_per_node_arbitrary_args(self):
+        zero = self.straw.retrieve_supplemental_irrigation_map("abritrary arg")
+        nose.tools.assert_equal(0, zero)

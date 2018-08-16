@@ -1,5 +1,5 @@
-#from __future__ import print_function
 from __future__ import division
+
 import argparse
 import datetime
 from dateutil.parser import parse
@@ -8,29 +8,26 @@ import pickle
 import json
 import numpy as np
 import hydroengine as hyd
-import econengine as econ
-from coupling import HydroEconCoupling
-import rasterio as rio
+import hydrovehicle
 import tqdm
-
 
 def main(argc):
 
     init_date = argc.init_date
 
     pp = utils.RasterParameterIO(argc.precip)
-    pp_affine = pp.affine
+    pp_affine = pp.transform
     pp_nodata = pp.nodata
     pp_data = pp.array.clip(min=0)
 
     tmin = utils.RasterParameterIO(argc.tmin)
-    tmin_affine = tmin.affine
+    tmin_affine = tmin.transform
     tmin_nodata = tmin.nodata
     tmin_data = tmin.array
     tmin_data[tmin_data != tmin_nodata] -= 273.15
 
     tmax = utils.RasterParameterIO(argc.tmax)
-    tmax_affine = tmax.affine
+    tmax_affine = tmax.transform
     tmax_nodata = tmax.nodata
     tmax_data = tmax.array
     tmax_data[tmax_data != tmax_nodata] -= 273.15
@@ -67,26 +64,34 @@ def main(argc):
         soils = []
         Q = np.zeros(num_links)
 
-    # Open water user object
-    with open('Farms.json') as json_farms:
-        farms = json.load(json_farms)
-
-    # Open scenarios object
-    with open('Scenarios.json') as json_scenarios:
-        scenarios = json.load(json_scenarios)
-
-    # retrieve the list of farms in the json input
-    lst_farms = farms['farms']
-
     """
     Creates the rainfall-runoff model object, the routing object and the model coupling objects 
     """
     rr = hyd.HBV(86400, swe, pond, sm, soils, **hbv_pars)
     mc = hyd.Routing(adj_net, 86400)
-    hydecon = HydroEconCoupling(mc, lst_farms)
 
-    # simulates all users with loaded scenarios
-    hydecon.simulate_all_users(scenarios)
+    # creates mock coupler
+    simulated_water_users = utils.coupling.StrawFarmCoupling()
+    if argc.econengine is not None:
+        print "Economic module activated, generating water users and coupling objects... "
+        # Open water user object
+        with open(argc.econengine[0]) as json_farms:
+            farms = json.load(json_farms)
+
+        # Open scenarios object
+        with open(argc.econengine[1]) as json_scenarios:
+            scenarios = json.load(json_scenarios)
+
+        # retrieve the list of farms in the json input
+        lst_farms = farms['farms']
+
+        # Building the model coupling object and set up the farmer users
+        coupler = utils.coupling.HydroEconCoupling(mc, lst_farms, pp_data[0, :, :], pp_affine)
+        coupler.setup_farmer_user(argc.econengine[2], argc.econengine[3])
+
+        print "Simulating water users... "
+        # simulates all users with loaded scenarios
+        simulated_water_users = coupler.simulate_all_users(scenarios)
 
 
     ro_ts = []
@@ -102,9 +107,12 @@ def main(argc):
 
             cur_date = (parse(init_date) + i * datetime.timedelta(seconds=rr.dt)).strftime("%Y%m%d")
 
+            water_diversion = simulated_water_users.retrieve_water_diversion_per_node(cur_date)
+            suppl_irr = simulated_water_users.retrieve_supplemental_irrigation_map()
+
             # Calculate potential evapotranspiration
             pet = hyd.hamon_pe((tmin_data[i, :, :] + tmax_data[i, :, :]) * 0.5, lat, i)
-            runoff = rr.run_time_step(pp_data[i, :, :], tmax_data[i, :, :], tmin_data[i, :, :], pet, argc.basin_shp,
+            runoff = rr.run_time_step(pp_data[i, :, :] + suppl_irr, tmax_data[i, :, :], tmin_data[i, :, :], pet, argc.basin_shp,
                                       affine=tmax_affine, nodata=pp_nodata)
             # runoff[1] = runoff[-1] = 0
 
@@ -140,10 +148,22 @@ if __name__ == '__main__':
 
     parser.add_argument('--restart', dest='restart', action='store_true')
 
-    subparser = parser.add_subparsers(help="economic module arguments")
-    econ_parser = subparser.add_parser("econ", help="economic module argumentsw")
-    econ_parser.add_argument("fn_farm_data", help="Json file with agricultural water user information ")
-    econ_parser.add_argument("fn_scenario", help="json file with agroeconomic scenario information")
+    parser.add_argument('-econengine', required=False, default=None, nargs=5,
+                        metavar=('fn_farm_data_json', 'fn_scenario_data_json', 'fn_water_user_shapes',
+                                 'lu_raster', 'lu_irr_id'),
+                        help="Activates the economic engine of agricultural production. ")
 
-    args = parser.parse_args()
+    #subparser = parser.add_subparsers(help="economic module arguments")
+    #subparser.required = False
+    #econ_parser = subparser.add_parser("econengine", help="economic module argumentsw")
+    #econ_parser.add_argument("fn_farm_data", help="Json file with agricultural water user information ")
+    #econ_parser.add_argument("fn_scenario", help="json file with agroeconomic scenario information")
+
+    if __debug__:
+        args = parser.parse_args("08/31/2012 precip_F2012-09-01_T2013-08-31.nc tempmin_F2012-09-01_T2013-08-31.nc"
+                             " tempmax_F2012-09-01_T2013-08-31.nc"
+                             " param_files_test.json rivout.shp subsout.shp "
+                                 "-econengine Farms.json Scenario.json Counties.geojson ORIG_FID LCType_mt.tiff ".split())
+    else:
+        args = parser.parse_args()
     main(args)
