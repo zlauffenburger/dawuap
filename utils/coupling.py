@@ -6,6 +6,8 @@ from dateutil import parser
 import datetime
 import rasterio as rio
 from rasterio.features import rasterize
+import logging
+
 
 __all__ = ['HydroEconCoupling', 'StrawFarmCoupling']
 
@@ -208,8 +210,8 @@ class FarmCoupling(object):
             m = np.count_nonzero(np.isin(lu, irr_ag_ids) & (self.water_user_mask == farm_id))
             applied_water = np.apply_along_axis(np.sum, 0, water_diversion_table[:, i + 1]).sum()
             if m == 0:
-                print("WARNING: water user with id %i is irrigating but water user mask does not contain"
-                      " irrigated pixels") %farm_id
+                logging.warning("WARNING: water user with id %i is irrigating but water user mask does not contain"
+                      " irrigated pixels" %farm_id)
 
             self.array_supplemental_irrigation = np.where(np.isin(lu, irr_ag_ids) &
                                                                  (self.water_user_mask == farm_id),

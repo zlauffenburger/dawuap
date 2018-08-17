@@ -1,4 +1,5 @@
 from __future__ import division
+import logging
 
 import argparse
 import datetime
@@ -164,11 +165,14 @@ if __name__ == '__main__':
                                  'ID_field', 'lu_raster', 'lu_irr_id'),
                         help="Activates the economic engine of agricultural production. ")
 
-    if __debug__:
-        args = parser.parse_args("08/31/2012 precip_F2012-09-01_T2013-08-31.nc tempmin_F2012-09-01_T2013-08-31.nc"
-                " tempmax_F2012-09-01_T2013-08-31.nc"
-                " param_files_test.json rivout.shp subsout.shp "
-                "-econengine Farms.json Scenario.json Counties.geojson ORIG_FID LCType_mt.tif (12,14)".split())
-    else:
-        args = parser.parse_args()
+    # if __debug__:
+    #     args = parser.parse_args("08/31/2012 precip_F2012-09-01_T2013-08-31.nc tempmin_F2012-09-01_T2013-08-31.nc"
+    #             " tempmax_F2012-09-01_T2013-08-31.nc"
+    #             " param_files_test.json rivout.shp subsout.shp "
+    #             "-econengine Farms.json Scenario.json Counties.geojson ORIG_FID LCType_mt.tif (12,14)".split())
+    # else:
+    #     args = parser.parse_args()
+    args = parser.parse_args()
+    logging.basicConfig(filename='non_standard_output.log', level=logging.WARNING)
+
     main(args)
