@@ -421,7 +421,7 @@ class Farm(WaterUser):
 
         return output
 
-    def calibrate(self, **kwargs):
+    def calibrate(self, solve_pmp_program=True, **kwargs):
         """Calibrates the economic model of agricultural production.
 
         Parameters
@@ -450,7 +450,7 @@ class Farm(WaterUser):
         """
 
         # set reference observations, solve nonlinear program and return results
-        res = self._set_reference_observations(**kwargs)()
+        res = self._set_reference_observations(**kwargs)(solve_pmp_program)
 
         if res.success:
 
