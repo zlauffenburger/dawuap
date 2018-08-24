@@ -15,11 +15,11 @@ __all__ = ['HydroEconCoupling', 'StrawFarmCoupling']
 class StrawFarmCoupling(object):
     @staticmethod
     def retrieve_supplemental_irrigation_map(*args):
-        return 0
+        return np.array([0])
 
     @staticmethod
     def retrieve_water_diversion_per_node(*args):
-        return 0, 0
+        return np.zeros((2,1)), np.zeros((2,1))
 
 
 class HydroEconCoupling(object):
