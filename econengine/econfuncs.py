@@ -52,6 +52,8 @@ class Farm(WaterUser):
         self.etasim = np.asarray(kwargs['simulated_states'].get('supply_elasticity_eta'))
         self._ysim = np.asarray(kwargs['simulated_states'].get('yields')) / self.ref_yields
         self.ysim_w = np.asarray(kwargs['simulated_states'].get('yield_elasticity_water'))
+        self._net_revs = np.asarray(kwargs['simulated_states'].get('net_revenues'))
+        self._lagrange_mults = np.asarray(kwargs['simulated_states'].get('shadow_prices'))
 
         # This to be filled with information provided during simulations
         self.crop_start_date = None
@@ -87,6 +89,14 @@ class Farm(WaterUser):
     def ysim(self, value):
         """Sets simulated yields"""
         self._ysim = value / self.ref_yields
+
+    @property
+    def net_revs(self):
+        return self._net_revs * self.ref_prices
+
+    @property
+    def lagrange_mults(self):
+        return self._lagrange_mults * self.ref_prices
 
     def _check_calibration_criteria(self, sigmas, eta, xbar, ybar_w, qbar, p):
 
@@ -306,7 +316,9 @@ class Farm(WaterUser):
                 "used_water": self.watersim.tolist(),
                 "supply_elasticity_eta": self.etasim.tolist(),
                 "yields": self.ysim.tolist(),
-                "yield_elasticity_water": self.ysim_w.tolist()
+                "yield_elasticity_water": self.ysim_w.tolist(),
+                "net_revenues": self.net_revs.tolist(),
+                "shadow_prices": self.lagrange_mults.tolist()
             },
             "normalization_refs": {
                 "reference_et": self.ref_et.tolist(),
@@ -355,71 +367,108 @@ class Farm(WaterUser):
 
         et0 = np.array(kwargs['evapotranspiration'])/self.ref_et
         prices = np.array(kwargs['prices'])/self.ref_prices
-        if prices.ndim < 2:
-            prices = prices[:, np.newaxis]
+        #if prices.ndim < 2:
+        #    prices = prices[:, np.newaxis]
 
         costs = np.array(kwargs['costs'])
 
         costs[:, 0] /= (self.ref_prices * self.ref_yields)
         costs[:, 1] *= self.ref_et/(self.ref_prices * self.ref_yields)
-        L = np.array(kwargs['land_constraint'])
-        W = np.array(kwargs['water_constraint'])
+        L = np.array(kwargs['land_constraint'])/self.ref_land
+        W = np.array(kwargs['water_constraint'])/self.ref_et
         LW = np.hstack((L, W))
 
         self.crop_start_date = np.array(kwargs['crop_start_date'])
         self.crop_cover_date = np.array(kwargs['crop_cover_date'])
         self.crop_end_date = np.array(kwargs['crop_end_date'])
 
-        def func(res):
+        # def func(res):
+        #
+        #     num_crops = len(self.crop_list)
+        #     num_inputs = len(self.input_list)
+        #
+        #     # parse inputs vector into convenient variables
+        #     # first input resources for each crop (matrix x)
+        #     # then simulated production (q)
+        #     # finally lagrange multipliers
+        #     x = res[:num_crops * num_inputs].reshape(num_inputs, num_crops).T
+        #     xstar = x.copy()
+        #     xstar[:, -1] += et0
+        #     q = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x, et0)[:, np.newaxis]
+        #     lbdas = res[(x.size ): (x.size ) + num_inputs]
+        #     psi = res[((x.size ) + lbdas.size):][:, np.newaxis]
+        #
+        #     # build the left hand side of system of equations
+        #     r = rho(self.sigmas)[:, np.newaxis]
+        #     num = prices * self.deltas[:, np.newaxis] * q * self.betas * (xstar ** r)
+        #     xstar = xstar.clip(min=0.0001)
+        #     den = np.diag(np.dot(self.betas, (xstar**r).T))
+        #     drevdx = num / den[:, np.newaxis]
+        #
+        #     pluset = np.zeros_like(x)
+        #     pluset[:, 0] += et0
+        #
+        #     xc = x[:, -1].copy()
+        #     #xc[self.irr] = 0
+        #
+        #     lhs = np.hstack((drevdx.T.flatten(),  (x + pluset).sum(axis=0), (psi*xc[:, np.newaxis]).flatten()))
+        #
+        #     # build right hand side of system of equations
+        #
+        #     dcdx = (costs + self.lambdas_land + lbdas + psi) * xstar
+        #     #qbar = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x, et0)
+        #
+        #     rhs = np.hstack((dcdx.T.flatten(), LW, np.zeros_like(xc)))
+        #
+        #     #print np.sum(lhs - rhs)
+        #     return lhs - rhs
 
-            num_crops = len(self.crop_list)
-            num_inputs = len(self.input_list)
 
-            # parse inputs vector into convenient variables
-            # first input resources for each crop (matrix x)
-            # then simulated production (q)
-            # finally lagrange multipliers
-            x = res[:num_crops * num_inputs].reshape(num_inputs, num_crops).T
-            xstar = x.copy()
-            xstar[:, -1] += et0
-            q = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x, et0)[:, np.newaxis]
-            lbdas = res[(x.size ): (x.size ) + num_inputs]
-            psi = res[((x.size ) + lbdas.size):][:, np.newaxis]
 
-            # build the left hand side of system of equations
-            r = rho(self.sigmas)[:, np.newaxis]
-            num = prices * self.deltas[:, np.newaxis] * q * self.betas * (xstar ** r)
-            xstar = xstar.clip(min=0.0001)
-            den = np.diag(np.dot(self.betas, (xstar**r).T))
-            drevdx = num / den[:, np.newaxis]
+        # Solve maximization problem using scipy
+        def netrevs(x):
 
-            pluset = np.zeros_like(x)
-            pluset[:, 0] += et0
-
-            xc = x[:, -1].copy()
-            #xc[self.irr] = 0
-
-            lhs = np.hstack((drevdx.T.flatten(),  (x + pluset).sum(axis=0), (psi*xc[:, np.newaxis]).flatten()))
-
-            # build right hand side of system of equations
-
-            dcdx = (costs + self.lambdas_land + lbdas + psi) * xstar
-            #qbar = self.production_function(self.sigmas, self.betas, self.deltas, self.mus, x, et0)
-
-            rhs = np.hstack((dcdx.T.flatten(), LW, np.zeros_like(xc)))
-
-            #print np.sum(lhs - rhs)
-            return lhs - rhs
+            x = x.reshape(8, 2)
+            q = self.production_function(self.sigmas, self.betas, self.deltas,
+                                         self.mus, x, et0)
+            nr = prices * q - np.sum((costs + self.lambdas_land) * x, axis=1)
+            return -1 * nr.sum()
 
         # prepare initial guesses
+        xbar = np.array([self._landsim, self._watersim]).T
 
-        q0 = self._ysim * self._landsim
-        lam = np.zeros(len(self.input_list))
-        lam_irr = np.zeros(len(self.crop_list))
-        x0 = np.hstack((self._landsim, self._watersim, lam, lam_irr))
-        output = sci.root(func, x0, method='lm')
+        # set bounda to ensure non-negative solutions
+        bnds = sci.Bounds(0.0, np.inf)
 
-        return output
+        # set constraints that used land and water is less than available resources
+        Azeros = np.zeros_like(xbar)
+        A = []
+        for c in Azeros.T:
+            c += 1
+            A.append(Azeros.flatten())
+            c -= 1
+        A = np.asarray(A)
+
+        lin_const = sci.LinearConstraint(A, 0, LW)
+
+        res = sci.minimize(netrevs, xbar.flatten(), method='trust-constr', jac="2-point", hess=sci.SR1(),
+                           constraints=lin_const,
+                           bounds=bnds)
+
+        if (res.status == 1) or (res.status == 2):
+            xbar_opt = res.x.reshape(8, 2)
+            self._landsim = xbar_opt[:, 0]
+            self._watersim = xbar_opt[:, -1]
+            self._net_revs = res.fun
+            self._lagrange_mults = res.v[0]
+
+            # simulate yields with optimal parameters
+            self._ysim = self.production_function(self.sigmas, self.betas, self.deltas,
+                                         self.mus, xbar_opt, et0)
+
+        # this functions shouldnt return, it should write to member variables so variables are
+        # unnormalized
+        return res
 
     def calibrate(self, solve_pmp_program=True, **kwargs):
         """Calibrates the economic model of agricultural production.

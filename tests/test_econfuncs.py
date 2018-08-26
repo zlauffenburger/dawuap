@@ -253,6 +253,7 @@ class TestFarm(object):
     def test_simulate(self):
 
         import scipy.optimize as opt
+        from scipy.optimize import Bounds, LinearConstraint, SR1
 
         with open('test_data/test_farm.json') as json_farms:
             farms = json.load(json_farms)
@@ -265,13 +266,13 @@ class TestFarm(object):
             'prices': self.prices,
             'costs': self.costs,
             'land_constraint': np.sum(self.obs_land),
-            'water_constraint': np.sum(self.obs_water)/self.refet,
+            'water_constraint': np.sum(self.obs_water),
             'crop_start_date': ["5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014", "5/15/2014",
                                 "5/15/2014", "5/15/2014", "5/15/2014"],
             'crop_cover_date': ["7/02/2014", "7/02/2014", "7/02/2014", "7/02/2014", "7/02/2014",
                                 "7/02/2014", "7/02/2014", "7/02/2014"],
             'crop_end_date': ["8/25/2014", "8/25/2014", "8/25/2014", "8/25/2014", "8/25/2014",
-                              "8/25/2014","8/25/2014", "8/25/2014"],
+                              "8/25/2014", "8/25/2014", "8/25/2014"],
         }
 
         sim = a.simulate(**env)
@@ -282,14 +283,14 @@ class TestFarm(object):
         # Solve maximization problem using scipy
         def netrevs(x):
 
-            x = x.T.reshape(8, 2).copy()
+            x = x.reshape(8, 2)
             p = self.prices/self.refprices
             costs = self.costs.copy()
             costs[:, 0] /= (self.refprices * self.refyields)
             costs[:, 1] *= self.refet / (self.refprices * self.refyields)
             q = a.production_function(a.sigmas, a.betas, a.deltas,
                                                a.mus, x, self.et0/a.ref_et)
-            nr = p * q - np.sum((costs + self.lambdas_land) * x, axis=1)
+            nr = p * q - np.sum((costs + a.lambdas_land) * x, axis=1)
             return -nr.sum()
 
         xbar = self.xbar.copy()
@@ -300,14 +301,29 @@ class TestFarm(object):
         eq_const2 = {'type': 'eq',
                       'fun': lambda x: x.T.reshape(8, 2)[:, -1][~a.irr] - xbar[:, -1][~a.irr]}
 
-        res = opt.minimize(netrevs, xbar, method='trust-constr', constraints=[eq_const1, eq_const2],
-                           bounds=[(0.00, None)]*self.xbar.size, options={"disp": 1})
+        bnds = Bounds(0.0, np.inf)
+
+        Azeros = np.zeros_like(self.xbar)
+        A = []
+        for c in Azeros.T:
+            c += 1
+            A.append(Azeros.flatten())
+            c -= 1
+        A = np.asarray(A)
+
+        lb = 0
+        ub = xbar.sum(axis=0)
+        lin_const = LinearConstraint(A, lb, ub)
+
+        res = opt.minimize(netrevs, xbar.flatten(), method='trust-constr', jac="2-point", hess=SR1(),
+                           constraints=lin_const,
+                           bounds=bnds)
         print res
         print res.x.reshape(8, 2)
 
         print res.x.reshape(8, 2).sum(axis=0)
 
-        np.testing.assert_allclose( sim.x[:16].reshape(2, 8).T, res.x.reshape(8, 2), rtol=1e-2)
+        np.testing.assert_allclose(sim.x.reshape(8, 2), res.x.reshape(8, 2), rtol=1e-2)
 
     def test_write_farm_dict(self):
         ref_dic = self.farm1
