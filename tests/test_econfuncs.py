@@ -286,8 +286,8 @@ class TestFarm(object):
             x = x.reshape(8, 2)
             p = self.prices/self.refprices
             costs = self.costs.copy()
-            costs[:, 0] /= (self.refprices * self.refyields)
-            costs[:, 1] *= self.refet / (self.refprices * self.refyields)
+            costs[:, 0] /= (a.ref_prices * a.ref_yields)
+            costs[:, 1] *= a.ref_et / (a.ref_prices * a.ref_yields)
             q = a.production_function(a.sigmas, a.betas, a.deltas,
                                                a.mus, x, self.et0/a.ref_et)
             nr = p * q - np.sum((costs + a.lambdas_land) * x, axis=1)
@@ -315,7 +315,7 @@ class TestFarm(object):
         ub = xbar.sum(axis=0)
         lin_const = LinearConstraint(A, lb, ub)
 
-        res = opt.minimize(netrevs, xbar.flatten(), method='trust-constr', jac="2-point", hess=SR1(),
+        res = opt.minimize(netrevs, xbar.flatten(), method='trust-constr', jac="3-point", hess=SR1(),
                            constraints=lin_const,
                            bounds=bnds)
         print res

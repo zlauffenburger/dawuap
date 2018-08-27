@@ -47,13 +47,13 @@ class Farm(WaterUser):
         #self.prices = None
         #self.costs = kwargs.get('costs')  # land and water costs. Array with one row per crop. First column land second column water
 
-        self._landsim = np.asarray(kwargs['simulated_states'].get('used_land')) / self.ref_land
-        self._watersim = np.asarray(kwargs['simulated_states'].get('used_water')) / self.ref_et
-        self.etasim = np.asarray(kwargs['simulated_states'].get('supply_elasticity_eta'))
-        self._ysim = np.asarray(kwargs['simulated_states'].get('yields')) / self.ref_yields
-        self.ysim_w = np.asarray(kwargs['simulated_states'].get('yield_elasticity_water'))
-        self._net_revs = np.asarray(kwargs['simulated_states'].get('net_revenues'))
-        self._lagrange_mults = np.asarray(kwargs['simulated_states'].get('shadow_prices'))
+        self._landsim = np.asarray(kwargs['simulated_states'].get('used_land', 0)) / self.ref_land
+        self._watersim = np.asarray(kwargs['simulated_states'].get('used_water', 0)) / self.ref_et
+        self.etasim = np.asarray(kwargs['simulated_states'].get('supply_elasticity_eta', 0))
+        self._ysim = np.asarray(kwargs['simulated_states'].get('yields', 0)) / self.ref_yields
+        self.ysim_w = np.asarray(kwargs['simulated_states'].get('yield_elasticity_water', 0))
+        self._net_revs = np.asarray(kwargs['simulated_states'].get('net_revenues', 0))
+        self._lagrange_mults = np.asarray(kwargs['simulated_states'].get('shadow_prices', 0))
 
         # This to be filled with information provided during simulations
         self.crop_start_date = None
@@ -96,7 +96,7 @@ class Farm(WaterUser):
 
     @property
     def lagrange_mults(self):
-        return self._lagrange_mults * self.ref_prices
+        return np.multiply(self._lagrange_mults, self.ref_prices)
 
     def _check_calibration_criteria(self, sigmas, eta, xbar, ybar_w, qbar, p):
 
@@ -451,7 +451,7 @@ class Farm(WaterUser):
 
         lin_const = sci.LinearConstraint(A, 0, LW)
 
-        res = sci.minimize(netrevs, xbar.flatten(), method='trust-constr', jac="2-point", hess=sci.SR1(),
+        res = sci.minimize(netrevs, xbar.flatten(), method='trust-constr', jac="3-point", hess=sci.SR1(),
                            constraints=lin_const,
                            bounds=bnds)
 
@@ -459,12 +459,13 @@ class Farm(WaterUser):
             xbar_opt = res.x.reshape(8, 2)
             self._landsim = xbar_opt[:, 0]
             self._watersim = xbar_opt[:, -1]
-            self._net_revs = res.fun
             self._lagrange_mults = res.v[0]
-
             # simulate yields with optimal parameters
             self._ysim = self.production_function(self.sigmas, self.betas, self.deltas,
-                                         self.mus, xbar_opt, et0)
+                                                  self.mus, xbar_opt, et0)
+            self._net_revs = prices * self._ysim - np.sum((costs + self.lambdas_land) * xbar_opt, axis=1)
+
+
 
         # this functions shouldnt return, it should write to member variables so variables are
         # unnormalized

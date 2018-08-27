@@ -41,7 +41,9 @@
         "used_water": [ 0.61, 0.125, 0.25155, 0.164, 0.818, 0.1275, 0.0945, 3.1235 ],
         "supply_elasticity_eta": [0.35, 0.29, 0.29, 1.33, 0.38, 0.38, 0.35, 0.35],
         "yields": [35, 2.2, 5.4, 1.7, 30, 110, 36, 36],
-        "yield_elasticity_water": [0.06, 0.21, 0.21, 0.26, 0.06, 0.06, 0.06, 0.06]
+        "yield_elasticity_water": [0.06, 0.21, 0.21, 0.26, 0.06, 0.06, 0.06, 0.06],
+        "net_revenues": 0,
+        "shadow_prices": 0
       },
       "normalization_refs":{
         "reference_et": [25],
@@ -91,7 +93,9 @@
         "used_water": [0, 0, 27.25, 0, 0, 20.0, 0, 0],
         "supply_elasticity_eta": [0.35, 0.29, 0.29, 1.33, 0.38, 0.38, 0.35, 0.35],
         "yields": [35, 2.2, 5.4, 1.7, 30, 110, 36, 36],
-        "yield_elasticity_water": [0.06, 0.21, 0.21, 0.26, 0.06, 0.06, 0.06, 0.06]
+        "yield_elasticity_water": [0.06, 0.21, 0.21, 0.26, 0.06, 0.06, 0.06, 0.06],
+        "net_revenues": 0,
+        "shadow_prices": 0
       },
       "normalization_refs":{
         "reference_et": [25],
