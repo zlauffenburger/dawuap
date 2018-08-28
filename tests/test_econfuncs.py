@@ -315,7 +315,7 @@ class TestFarm(object):
 
         lb = 0
         ub = xbar.sum(axis=0)
-        lin_const = LinearConstraint(A, 0, ub)
+        lin_const = LinearConstraint(A, [0, ub[-1]], ub)
 
         res = opt.minimize(netrevs, xbar.flatten(), method='trust-constr', jac="3-point", hess=SR1(),
                            constraints=lin_const,
