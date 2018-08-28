@@ -283,7 +283,16 @@ class Farm(WaterUser):
             x = np.hstack((self.deltas, self.betas.T.flatten(),
                            self.mus, self.lambdas_land.T.flatten(), self.first_stage_lambda))
             if solve_pmp_program:
-                return sci.root(func, x, method='lm')
+                opt_res = sci.root(func, x, method='lm')
+                if opt_res.success:
+                    self.first_stage_lambda = opt_res.x[-1]
+                    pars2 = opt_res.x[:-1].reshape(-1, prices.size).T
+                    self.deltas = pars2[:, 0]
+                    self.betas = pars2[:, 1:3]
+                    self.mus = pars2[:, 3]
+                    self.lambdas = pars2[:, 4:]
+
+                return opt_res
             else:
                 return func(x)
 
@@ -331,8 +340,8 @@ class Farm(WaterUser):
         }
 
         if fname is not None:
-            with open(fname, 'w') as file:
-                file.write(json.dumps(farm_dic))
+            with open(fname, 'w') as json_file:
+                json_file.write(json.dumps(farm_dic))
 
         return farm_dic
 

@@ -248,6 +248,8 @@ class TestFarm(object):
         pmp = TestFarm.a.calibrate(**observs)
 
         print pmp
+        TestFarm.a.write_farm_dict("test_data/optimalFarm.json")
+
         nose.tools.assert_equals(pmp.success, True)
 
     def test_simulate(self):
@@ -255,7 +257,7 @@ class TestFarm(object):
         import scipy.optimize as opt
         from scipy.optimize import Bounds, LinearConstraint, SR1
 
-        with open('test_data/test_farm.json') as json_farms:
+        with open('test_data/optimalFarm.json') as json_farms:
             farms = json.load(json_farms)
 
         a = econfuncs.Farm(**farms)
@@ -313,7 +315,7 @@ class TestFarm(object):
 
         lb = 0
         ub = xbar.sum(axis=0)
-        lin_const = LinearConstraint(A, lb, ub)
+        lin_const = LinearConstraint(A, 0, ub)
 
         res = opt.minimize(netrevs, xbar.flatten(), method='trust-constr', jac="3-point", hess=SR1(),
                            constraints=lin_const,
