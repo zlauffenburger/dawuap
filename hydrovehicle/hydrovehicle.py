@@ -150,7 +150,7 @@ def main(argc):
         if argc.econengine is not None:
             print "Writing water users objects to drive... "
             # Open water user object
-            simulated_water_users.save_farm_list_json(argc.econengine.split(".")[0] + "_out.json")
+            simulated_water_users.save_farm_list_json(argc.econengine[0].split(".")[0] + "_out.json")
 
 
 if __name__ == '__main__':
