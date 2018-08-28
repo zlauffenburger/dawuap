@@ -11,6 +11,7 @@ import numpy as np
 import hydroengine as hyd
 import tqdm
 
+
 def main(argc):
 
     init_date = argc.init_date
@@ -145,6 +146,11 @@ def main(argc):
         pickle.dump(Q, open("streamflows.pickled", "wb"))
 
         utils.WriteOutputTimeSeries(adj_net, init_date).write_json(Q_ts)
+
+        if argc.econengine is not None:
+            print "Writing water users objects to drive... "
+            # Open water user object
+            simulated_water_users.save_farm_list_json(argc.econengine.split(".")[0] + "_out.json")
 
 
 if __name__ == '__main__':

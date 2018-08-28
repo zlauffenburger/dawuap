@@ -96,7 +96,9 @@ class Farm(WaterUser):
 
     @property
     def lagrange_mults(self):
-        return np.multiply(self._lagrange_mults, self.ref_prices)
+        av_scale_land = np.average(self.ref_prices * self.ref_yields)
+        av_scale_Water = np.average((self.ref_prices * self.ref_yields)/self.ref_et)
+        return np.multiply(self._lagrange_mults,np.array([av_scale_land, av_scale_Water]))
 
     def _check_calibration_criteria(self, sigmas, eta, xbar, ybar_w, qbar, p):
 
@@ -287,7 +289,7 @@ class Farm(WaterUser):
 
         return calibrate
 
-    def write_farm_dict(self, fname):
+    def write_farm_dict(self, fname=None):
         """Dumps farm information to a dictionary and returns it and writes it to fname"""
 
         farm_dic = {
@@ -328,8 +330,9 @@ class Farm(WaterUser):
             }
         }
 
-        with open(fname, 'w') as file:
-            file.write(json.dumps(farm_dic))
+        if fname is not None:
+            with open(fname, 'w') as file:
+                file.write(json.dumps(farm_dic))
 
         return farm_dic
 

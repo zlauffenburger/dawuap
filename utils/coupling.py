@@ -7,6 +7,7 @@ import datetime
 import rasterio as rio
 from rasterio.features import rasterize
 import logging
+import json
 
 
 __all__ = ['HydroEconCoupling', 'StrawFarmCoupling']
@@ -270,4 +271,16 @@ class FarmCoupling(object):
             lst_kc.append(np.array(lst))
 
         self.applied_water_factor[:, 1:][self.farm_idx] = lst_kc
+
+    def save_farm_list_json(self, fname):
+        """Saves dictionary of farms to disk with name fname."""
+
+        res = [farm.write_farm_dict() for farm in self.farms_table[:, 1:][self.farm_idx]]
+        d = {"farms": res}
+
+        with open(fname, 'w') as json_out:
+            json.dump(d, json_out)
+
+
+
 

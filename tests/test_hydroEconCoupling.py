@@ -181,6 +181,12 @@ class TestFarmCoupling(object):
         cur_date = "7/02/2014"
         self.farm_coupling.retrieve_water_diversion_per_node(cur_date)
 
+    def test_save_farm_list_json(self):
+        self.farm_coupling.save_farm_list_json("./test_data/Farms_out.json")
+        #with open('./test_data/Farms_out.json') as json_farms:
+        #    out = json.load(json_farms)
+        #nose.tools.assert_dict_equal({"farms": self.lst_farms}, out)
+
 
 class TestStrawFarmCoupling(object):
 
