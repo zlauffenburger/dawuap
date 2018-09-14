@@ -279,9 +279,6 @@ class TestFarm(object):
 
         sim = a.simulate(**env)
 
-     #   print sim
-     #   print sim.x[:16].reshape(2, 8).T
-
         # Solve maximization problem using scipy
         def netrevs(x):
 
@@ -291,19 +288,23 @@ class TestFarm(object):
             costs[:, 0] /= (a.ref_prices * a.ref_yields)
             costs[:, 1] *= a.ref_et / (a.ref_prices * a.ref_yields)
             q = a.production_function(a.sigmas, a.betas, a.deltas,
-                                               a.mus, x, self.et0/a.ref_et)
-            nr = p * q - np.sum((costs + a.lambdas_land) * x, axis=1)
+                                      a.mus, x, self.et0/a.ref_et)
+            nr = p * q - np.sum((costs + a.lambdas_land + [a.first_stage_lambda, 0]) * x, axis=1)
             return -nr.sum()
 
         xbar = self.xbar.copy()
         xbar[:, -1] = xbar[:, -1] / self.refet
 
-        eq_const1 = {'type': 'eq',
-                      'fun': lambda x: x.T.reshape(8, 2).sum(axis=0) - xbar.sum(axis=0)}
-        eq_const2 = {'type': 'eq',
-                      'fun': lambda x: x.T.reshape(8, 2)[:, -1][~a.irr] - xbar[:, -1][~a.irr]}
+        # eq_const1 = {'type': 'eq',
+        #               'fun': lambda x: x.T.reshape(8, 2).sum(axis=0) - xbar.sum(axis=0)}
+        # eq_const2 = {'type': 'eq',
+        #               'fun': lambda x: x.T.reshape(8, 2)[:, -1][~a.irr] - xbar[:, -1][~a.irr]}
 
-        bnds = Bounds(0.0, np.inf)
+        irr = np.zeros_like(xbar)
+        irr[:, :-1] = np.inf
+        irr[:, -1][a.irr] = np.inf
+        irr = irr.flatten()
+        bnds = Bounds(0, irr)
 
         Azeros = np.zeros_like(self.xbar)
         A = []
@@ -313,9 +314,8 @@ class TestFarm(object):
             c -= 1
         A = np.asarray(A)
 
-        lb = 0
         ub = xbar.sum(axis=0)
-        lin_const = LinearConstraint(A, [0, ub[-1]], ub)
+        lin_const = LinearConstraint(A, 0, ub)
 
         res = opt.minimize(netrevs, xbar.flatten(), method='trust-constr', jac="3-point", hess=SR1(),
                            constraints=lin_const,

@@ -257,29 +257,34 @@ class Farm(WaterUser):
             print "NEW OBSERVATIONS NOT INCORPORATED INTO FARM... "
             return None
 
-        def func(pars):
-
-            sigmas = self.sigmas
-
-            first_stage_lambda = pars[-1] # first stage lambda always the last parameter
-            pars2 = pars[:-1].reshape(-1, prices.size).T
-            deltas = pars2[:, 0]
-            betas = pars2[:, 1:3]
-            mus = pars2[:, 3]
-            lambdas = pars2[:, 4:]
-            rhs = self._observed_activity(prices, eta, ybar_w, ybar, xbar)
-
-            lhs = np.hstack((
-                self._eta_sim(sigmas, deltas, xbar, ybar_w, qbar, prices),
-                self._y_bar_w_sim(sigmas, betas, deltas, xbar),
-                self.production_function(sigmas, betas, deltas, mus, xbar),
-                self._convex_sum_constraint(betas),
-                self._first_stage_lambda_land_lhs(first_stage_lambda, prices, costs, deltas, qbar, ybar_w, xbar),
-                self._lambda_land_water_lhs(lambdas, first_stage_lambda, deltas, prices, costs, qbar, xbar).T.flatten()))
-
-            return lhs - rhs
-
         def calibrate(solve_pmp_program=True):
+
+            def func(pars):
+
+                sigmas = self.sigmas
+
+                first_stage_lambda = pars[-1]  # first stage lambda always the last parameter
+                pars2 = pars[:-1].reshape(-1, prices.size).T
+                deltas = pars2[:, 0]
+                betas = pars2[:, 1:3]
+                mus = pars2[:, 3]
+                lambdas = pars2[:, 4:]
+                rhs = self._observed_activity(prices, eta, ybar_w, ybar, xbar)
+
+                lhs = np.hstack((
+                    self._eta_sim(sigmas, deltas, xbar, ybar_w, qbar, prices),
+                    self._y_bar_w_sim(sigmas, betas, deltas, xbar),
+                    self.production_function(sigmas, betas, deltas, mus, xbar),
+                    self._convex_sum_constraint(betas),
+                    self._first_stage_lambda_land_lhs(first_stage_lambda, prices, costs, deltas, qbar, ybar_w, xbar),
+                    self._lambda_land_water_lhs(lambdas, first_stage_lambda, deltas, prices, costs, qbar,
+                                                xbar).T.flatten()))
+
+                if solve_pmp_program:
+                    return lhs - rhs
+                else:
+                    return lhs, rhs
+
             x = np.hstack((self.deltas, self.betas.T.flatten(),
                            self.mus, self.lambdas_land.T.flatten(), self.first_stage_lambda))
             if solve_pmp_program:
@@ -435,22 +440,27 @@ class Farm(WaterUser):
         #     #print np.sum(lhs - rhs)
         #     return lhs - rhs
 
-
-
         # Solve maximization problem using scipy
         def netrevs(x):
 
             x = x.reshape(8, 2)
             q = self.production_function(self.sigmas, self.betas, self.deltas,
                                          self.mus, x, et0)
-            nr = prices * q - np.sum((costs + self.lambdas_land) * x, axis=1)
+            lam_land = np.zeros(len(self.input_list))
+            lam_land[0] = self.first_stage_lambda
+            nr = prices * q - np.sum((costs + self.lambdas_land + lam_land) * x, axis=1)
             return -1 * nr.sum()
 
         # prepare initial guesses
         xbar = np.array([self._landsim, self._watersim]).T
 
-        # set bounda to ensure non-negative solutions
-        bnds = sci.Bounds(0.0, np.inf)
+        # set bounds to ensure non-negative solutions and that rainfed crops are not irrigated
+        irr = np.zeros_like(xbar)
+        irr[:, :-1] = np.inf
+        irr[:, -1][self.irr] = np.inf
+        irr = irr.flatten()
+        bnds = sci.Bounds(0.0, irr)
+        #bnds = sci.Bounds(0.0, np.inf)
 
         # set constraints that used land and water is less than available resources
         Azeros = np.zeros_like(xbar)
